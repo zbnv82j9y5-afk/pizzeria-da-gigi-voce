@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Da Gigi — Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Mulish:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/static/js/supabase-config.js"></script>
+<style>
+  :root{
+    --cream:#faf6f0;
+    --red:#c0392b; --red-dark:#a93226;
+    --green:#27ae60; --green-btn:#1e8449; --green-text:#1c7a45;
+    --ink:#333333; --muted:#6b6459;
+    --dark:#333333; --dark-card:#3f3f3f;
+    --border:#ece4d8;
+    --good:#1e8449; --good-bg:#e5f3ea;
+    --warn:#a97a12; --warn-bg:#faf0d9;
+    --critical:#c0392b; --critical-bg:#fbe6e3;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);font-family:'Mulish',sans-serif;}
+  body{min-height:100vh; display:flex; flex-direction:column;}
+  h1,h2,h3{font-family:'Caveat',cursive; font-weight:700; margin:0; color:var(--ink);}
+  .hidden{display:none !important;}
+
+  /* ---- top bar (post-login) ---- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; background:#ffffff; border-bottom:2px solid var(--border);
+    position:sticky; top:0; z-index:20;
+  }
+  .topbar .logo{font-size:1.6em; color:var(--red);}
+  .topbar .role-tag{font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-left:8px; vertical-align:middle;}
+  .topbar .actions{display:flex; gap:8px;}
+  .btn-logout{
+    background:#ffffff; border:1.5px solid var(--border); color:var(--muted);
+    border-radius:20px; padding:8px 14px; font-size:.82em; font-weight:700; cursor:pointer;
+  }
+
+  .tabbar{
+    display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px; background:#ffffff; border-bottom:2px solid var(--border);
+    position:sticky; top:57px; z-index:19;
+  }
+  .tabbar button{
+    flex:1 1 auto; min-width:90px; padding:10px 6px; border-radius:12px; border:1.5px solid var(--border);
+    background:var(--cream); color:var(--muted); font-family:'Mulish',sans-serif;
+    font-weight:700; font-size:.8em; cursor:pointer;
+  }
+  .tabbar button.active{ background:var(--red); color:#fff; border-color:var(--red); }
+
+  main{ flex:1; max-width:520px; width:100%; margin:0 auto; padding:18px 16px 40px; }
+
+  /* ---- setup warning ---- */
+  .setup-warning{
+    margin:40px auto; max-width:440px; background:#fff; border:1.5px solid var(--warn);
+    border-radius:16px; padding:24px 20px; text-align:center;
+  }
+  .setup-warning h2{ color:var(--warn); font-size:1.6em; margin-bottom:10px; }
+  .setup-warning p{ font-size:.92em; color:var(--muted); line-height:1.5; }
+  .setup-warning code{ background:var(--cream); padding:2px 6px; border-radius:6px; font-size:.85em; }
+
+  /* ---- login screen ---- */
+  #screen-login{ max-width:360px; margin:0 auto; padding:40px 20px; text-align:center; }
+  .login-logo{ font-size:2.4em; color:var(--red); margin-bottom:2px; }
+  .login-sub{ font-size:.85em; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:26px; }
+  .role-row{ display:flex; gap:10px; margin-bottom:22px; }
+  .role-btn{
+    flex:1; padding:14px 6px; border-radius:14px; border:1.5px solid var(--border);
+    background:#fff; color:var(--muted); font-weight:800; font-size:.85em; cursor:pointer;
+  }
+  .role-btn.selected{ border-color:var(--red); color:var(--red); background:#fdf1ef; }
+  .pin-dots{ display:flex; gap:12px; justify-content:center; margin:18px 0; }
+  .pin-dots span{ width:14px; height:14px; border-radius:50%; border:2px solid var(--muted); display:inline-block; }
+  .pin-dots span.filled{ background:var(--red); border-color:var(--red); }
+  .pin-dots.shake{ animation:shake .35s; }
+  @keyframes shake{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
+  .keypad{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
+  .key{
+    padding:18px 0; border-radius:14px; border:1.5px solid var(--border); background:#fff;
+    color:var(--ink); font-size:1.2em; font-weight:700; cursor:pointer;
+  }
+  .key:active{ background:var(--cream); }
+  .key.accent{ color:var(--muted); font-size:.85em; }
+  .login-error{ color:var(--critical); font-size:.82em; margin-top:14px; min-height:1.2em; }
+
+  /* ---- shared cards ---- */
+  .card{ background:#fff; border:1.5px solid var(--border); border-radius:16px; padding:16px; margin-bottom:16px; }
+  .section-title{ font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:10px; font-family:'Mulish',sans-serif; }
+
+  .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
+  .dot.good{ background:var(--good); } .dot.warn{ background:var(--warn); } .dot.critical{ background:var(--critical); }
+  .chip{ display:inline-flex; align-items:center; gap:6px; font-size:.78em; font-weight:700; padding:5px 12px; border-radius:999px; }
+  .chip.good{ color:var(--good); background:var(--good-bg); }
+  .chip.warn{ color:var(--warn); background:var(--warn-bg); }
+  .chip.critical{ color:var(--critical); background:var(--critical-bg); }
+  .chiplist{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chiplist .empty{ color:var(--muted); font-size:.85em; font-style:italic; }
+
+  /* ---- magazzino: panetti ---- */
+  .panetti-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .panetti-row input{
+    width:64px; text-align:center; font-size:1.1em; font-weight:700; padding:8px 4px;
+    border:1.5px solid var(--border); border-radius:10px; font-family:'Mulish',sans-serif;
+  }
+  .btn-save{ background:var(--green-btn); color:#fff; border:none; border-radius:10px; padding:9px 16px; font-weight:700; font-size:.85em; cursor:pointer; }
+  .btn-save:active{ background:var(--green-text); }
+  .panetti-stats{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+
+  /* ---- conti (solo admin) ---- */
+  .conti-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:.9em; }
+  .conti-row:last-child{ border-bottom:none; }
+  .conti-row span{ color:var(--muted); }
+  .conti-row strong{ font-size:1.05em; }
+  .spesa-form{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 10px; }
+  .spesa-form input[type="text"]{ flex:2; min-width:140px; }
+  .spesa-form input[type="number"]{ flex:1; min-width:80px; }
+  .spesa-form input{ padding:9px 10px; border:1.5px solid var(--border); border-radius:10px; font-family:'Mulish',sans-serif; font-size:.88em; }
+  .pizza-report-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); font-size:.88em; }
+  .pizza-report-row:last-child{ border-bottom:none; }
+  .pizza-report-name{ font-weight:700; flex:1; }
+  .pizza-report-badge{ font-size:.78em; }
+
+  /* ---- riordino ---- */
+  .riordino-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .riordino-row:last-child{ border-bottom:none; }
+  .riordino-nome{ font-weight:800; font-size:.94em; }
+  .riordino-dettaglio{ color:var(--muted); font-size:.76em; margin-top:2px; }
+  .riordino-qty{ flex:none; font-weight:800; color:var(--critical); font-size:1em; white-space:nowrap; }
+  .riordino-textarea{
+    width:100%; border:1.5px solid var(--border); border-radius:12px; padding:12px;
+    font-family:'Mulish',sans-serif; font-size:.86em; color:var(--ink); resize:vertical;
+  }
+  .btn-whatsapp{
+    width:100%; margin-top:10px; padding:13px; border:none; border-radius:12px;
+    background:#25D366; color:#fff; font-weight:800; font-size:.95em; cursor:pointer; font-family:'Mulish',sans-serif;
+  }
+  .btn-whatsapp:active{ opacity:.85; }
+
+  /* ---- magazzino: ingredienti ---- */
+  .ing-row{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .ing-row:last-child{ border-bottom:none; }
+  .ing-name{ flex:1; min-width:90px; font-weight:700; font-size:.92em; }
+  .ing-qty{ color:var(--muted); font-size:.8em; min-width:64px; text-align:right; }
+  .ing-qty-edit{ display:flex; align-items:center; gap:5px; }
+  .ing-qty-input{
+    width:66px; text-align:right; font-size:.9em; font-weight:700; padding:7px 6px;
+    border:1.5px solid var(--border); border-radius:8px; font-family:'Mulish',sans-serif; color:var(--ink);
+  }
+  .ing-qty-input:focus{ outline:none; border-color:var(--green-btn); }
+  .ing-unit{ color:var(--muted); font-size:.78em; min-width:18px; }
+  .btn-salva-agg{
+    flex:none; padding:8px 12px; background:var(--good-bg); border:1.5px solid var(--good); color:var(--good);
+    border-radius:10px; font-size:.76em; font-weight:800; font-family:'Mulish',sans-serif; cursor:pointer;
+  }
+  .btn-salva-agg:active{ transform:scale(0.97); }
+  .btn-esaurito{
+    background:var(--critical-bg); color:var(--critical); border:1.5px solid var(--critical);
+    border-radius:10px; padding:7px 12px; font-size:.76em; font-weight:800; cursor:pointer;
+  }
+  .btn-esaurito:disabled{ opacity:.4; cursor:default; }
+  .btn-reset{
+    width:100%; margin-top:12px; padding:12px 0; border-radius:12px; border:1.5px dashed var(--muted);
+    background:none; color:var(--muted); font-weight:700; font-size:.85em; cursor:pointer;
+  }
+
+  /* ---- stato del giorno ---- */
+  .big-tile{ text-align:center; background:#fff; border:1.5px solid var(--border); border-radius:18px; padding:26px 10px; margin-bottom:18px; }
+  .big-num{ font-size:3em; font-weight:800; color:var(--red); line-height:1; font-family:'Caveat',cursive; }
+  .big-label{ font-size:.72em; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-top:4px; }
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:10px 20px; border-radius:999px; font-size:.85em;
+    opacity:0; pointer-events:none; transition:opacity .25s;
+  }
+  .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- AVVISO: Supabase non ancora configurato                       -->
+<!-- ============================================================ -->
+<div id="setupWarning" class="setup-warning hidden">
+  <h2>Configurazione mancante</h2>
+  <p>Questa dashboard deve collegarsi allo stesso database Supabase della web app.<br><br>
+  Apri il file <code>config.js</code> in questa stessa cartella e inserisci
+  <code>SUPABASE_URL</code> e <code>SUPABASE_ANON_KEY</code> del tuo progetto
+  (li trovi in Supabase: Project Settings → API), poi ricarica questa pagina.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCHERMATA 1: ACCESSO                                          -->
+<!-- ============================================================ -->
+<div id="screen-login" class="hidden">
+  <div class="login-logo">🍕 Da Gigi</div>
+  <div class="login-sub">Accesso staff</div>
+
+  <div class="role-row">
+    <button type="button" class="role-btn selected" id="roleBtnPizzaiolo" onclick="selectRole('pizzaiolo')">👨‍🍳 Pizzaiolo</button>
+    <button type="button" class="role-btn" id="roleBtnAdmin" onclick="selectRole('admin')">🗂️ Admin</button>
+  </div>
+
+  <div class="pin-dots" id="pinDots">
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <div class="login-error" id="loginError">&nbsp;</div>
+
+  <div class="keypad">
+    <button type="button" class="key" onclick="pinPress('1')">1</button>
+    <button type="button" class="key" onclick="pinPress('2')">2</button>
+    <button type="button" class="key" onclick="pinPress('3')">3</button>
+    <button type="button" class="key" onclick="pinPress('4')">4</button>
+    <button type="button" class="key" onclick="pinPress('5')">5</button>
+    <button type="button" class="key" onclick="pinPress('6')">6</button>
+    <button type="button" class="key" onclick="pinPress('7')">7</button>
+    <button type="button" class="key" onclick="pinPress('8')">8</button>
+    <button type="button" class="key" onclick="pinPress('9')">9</button>
+    <button type="button" class="key accent" onclick="pinBackspace()">⌫</button>
+    <button type="button" class="key" onclick="pinPress('0')">0</button>
+    <button type="button" class="key accent"></button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- POST-LOGIN: barra in alto + tab                               -->
+<!-- ============================================================ -->
+<div id="appShell" class="hidden">
+  <div class="topbar">
+    <div><span class="logo">🍕 Da Gigi</span><span class="role-tag" id="roleTag"></span></div>
+    <div class="actions"><button type="button" class="btn-logout" onclick="logout()">Esci</button></div>
+  </div>
+  <div class="tabbar">
+    <button type="button" id="tabMagazzino" onclick="showScreen('magazzino')">📦 Magazzino</button>
+    <button type="button" id="tabStato" onclick="showScreen('stato')">📊 Stato del giorno</button>
+    <button type="button" id="tabRiordino" onclick="showScreen('riordino')">🛒 Riordino</button>
+    <button type="button" id="tabConti" class="hidden" onclick="showScreen('conti')">💶 Conti</button>
+  </div>
+
+  <main>
+    <!-- ========================================================== -->
+    <!-- SCHERMATA 2: MAGAZZINO                                      -->
+    <!-- ========================================================== -->
+    <div id="screen-magazzino" class="hidden">
+      <div class="card">
+        <div class="section-title">🌾 Panetti di oggi</div>
+        <div class="panetti-row">
+          <span>Preparati:</span>
+          <input type="number" min="0" id="panettiInput" inputmode="numeric">
+          <button type="button" class="btn-save" onclick="salvaPanetti()">Salva</button>
+        </div>
+        <div class="panetti-stats">
+          <span class="chip warn" id="panettiUsatiChip">— usati</span>
+          <span class="chip good" id="panettiRimastiChip">— rimasti</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🧀 Ingredienti</div>
+        <div id="ingredientiList">
+          <p style="color:var(--muted); font-size:.85em;">Caricamento...</p>
+        </div>
+        <button type="button" class="btn-reset" onclick="ripristinaTutto()">↺ Ripristina tutto</button>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- SCHERMATA 3: STATO DEL GIORNO                               -->
+    <!-- ========================================================== -->
+    <div id="screen-stato" class="hidden">
+      <div class="big-tile">
+        <div class="big-num" id="pizzeOrdinabiliNum">—</div>
+        <div class="big-label">Pizze ordinabili ora</div>
+      </div>
+
+      <div class="card hidden" id="alertPanettiCard" style="border-color:var(--critical); background:var(--critical-bg);">
+        <div class="section-title" style="color:var(--critical);">⚠️ Nessun panetto disponibile oggi</div>
+        <p style="color:var(--critical); font-size:.85em; margin:0;">Non risultano panetti d'impasto pronti per oggi: per questo nessuna pizza è ordinabile, anche se gli ingredienti non sono segnati come esauriti. Vai in Magazzino e registra i panetti preparati.</p>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🔴 Esauriti</div>
+        <div class="chiplist" id="listaEsauriti"><span class="empty">Nessuno, tutto disponibile</span></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🟡 Scorte basse</div>
+        <div class="chiplist" id="listaScorteBasse"><span class="empty">Nessun avviso</span></div>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- SCHERMATA 4: RIORDINO — cosa comprare, calcolato da solo    -->
+    <!-- ========================================================== -->
+    <div id="screen-riordino" class="hidden">
+      <div class="card">
+        <div class="section-title">🛒 Cosa comprare adesso</div>
+        <p style="color:var(--muted); font-size:.8em; margin:-4px 0 12px;">Calcolato da solo sul consumo reale degli ultimi 7 giorni, per tenere sempre in magazzino scorte sufficienti per una settimana — sale da solo in alta stagione, scende a fine stagione, senza bisogno di cambiare nulla a mano.</p>
+        <div id="riordinoList"><p style="color:var(--muted); font-size:.85em;">Caricamento...</p></div>
+      </div>
+
+      <div class="card hidden" id="riordinoMessaggioCard">
+        <div class="section-title">📲 Messaggio pronto per il fornitore</div>
+        <textarea id="riordinoTesto" class="riordino-textarea" readonly rows="7"></textarea>
+        <button type="button" class="btn-whatsapp" onclick="inviaRiordinoWhatsapp()">📲 Invia su WhatsApp</button>
+        <p style="color:var(--muted); font-size:.76em; margin:8px 0 0;">Si apre WhatsApp con il messaggio già scritto: scegli tu a chi mandarlo (il fornitore abituale, o chi va a fare la spesa) e tocca invia.</p>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- SCHERMATA 5: CONTI (solo Admin)                             -->
+    <!-- ========================================================== -->
+    <div id="screen-conti" class="hidden">
+      <div class="big-tile">
+        <div class="big-num" id="incassoOggiNum">—</div>
+        <div class="big-label">Incassato oggi</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">💰 Incassi</div>
+        <div class="conti-row"><span>Oggi</span><strong id="incassoOggiVal">—</strong></div>
+        <div class="conti-row"><span>Ultimi 7 giorni</span><strong id="incassoSettimanaVal">—</strong></div>
+        <div class="conti-row"><span>Ordini oggi</span><strong id="ordiniOggiVal">—</strong></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">💸 Uscite</div>
+        <div class="conti-row"><span>Registrate oggi</span><strong id="usciteOggiVal">—</strong></div>
+        <div class="spesa-form">
+          <input type="text" id="spesaDescrizione" placeholder="Descrizione (es. farina, bolletta)">
+          <input type="number" step="0.01" min="0" id="spesaImporto" placeholder="€" inputmode="decimal">
+          <button type="button" class="btn-save" onclick="registraSpesa()">Registra uscita</button>
+        </div>
+        <div id="listaSpeseOggi"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">⚖️ Bilancio di oggi</div>
+        <div class="conti-row"><span>Incassi − uscite</span><strong id="bilancioOggiVal">—</strong></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🍕 Report pizze — quali vanno bene, quali no</div>
+        <p style="color:var(--muted); font-size:.8em; margin:-4px 0 10px;">Numero di pizze vendute in totale, da quando registriamo gli ordini. Utile per capire quali tenere in menu.</p>
+        <div id="reportPizzeList"><p style="color:var(--muted); font-size:.85em;">Caricamento...</p></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ==========================================================================
+  // Stato e collegamento a Supabase
+  // ==========================================================================
+  var CFG = window.PIZZERIA_CONFIG || {};
+  var supabaseClient = null;
+  var currentRole = 'pizzaiolo';
+  var pinBuffer = '';
+  var currentScreen = null;
+  var pollTimer = null;
+
+  function isConfigured() {
+    return CFG.SUPABASE_URL && CFG.SUPABASE_URL.indexOf('INSERISCI') === -1 &&
+           CFG.SUPABASE_ANON_KEY && CFG.SUPABASE_ANON_KEY.indexOf('INSERISCI') === -1;
+  }
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+
+  // ==========================================================================
+  // Avvio
+  // ==========================================================================
+  window.addEventListener('DOMContentLoaded', function () {
+    if (!isConfigured()) {
+      document.getElementById('setupWarning').classList.remove('hidden');
+      return;
+    }
+    if (typeof window.supabase === 'undefined') {
+      var w = document.getElementById('setupWarning');
+      w.querySelector('h2').textContent = 'Libreria non caricata';
+      w.querySelector('p').innerHTML = 'Questa pagina deve scaricare la libreria <code>supabase-js</code> da internet al primo avvio. Controlla la connessione di rete di questo dispositivo e ricarica la pagina.';
+      w.classList.remove('hidden');
+      return;
+    }
+    try {
+      supabaseClient = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+    } catch (e) {
+      var w2 = document.getElementById('setupWarning');
+      w2.querySelector('h2').textContent = 'Errore di configurazione';
+      w2.querySelector('p').textContent = 'Controlla che SUPABASE_URL e SUPABASE_ANON_KEY in config.js siano corretti. Dettaglio: ' + e.message;
+      w2.classList.remove('hidden');
+      return;
+    }
+
+    var savedRole = sessionStorage.getItem('staffRole');
+    if (savedRole) {
+      currentRole = savedRole;
+      enterApp();
+    } else {
+      document.getElementById('screen-login').classList.remove('hidden');
+    }
+  });
+
+  // ==========================================================================
+  // Login: selezione ruolo + tastierino PIN
+  // ==========================================================================
+  function selectRole(role) {
+    currentRole = role;
+    document.getElementById('roleBtnPizzaiolo').classList.toggle('selected', role === 'pizzaiolo');
+    document.getElementById('roleBtnAdmin').classList.toggle('selected', role === 'admin');
+  }
+
+  function renderPinDots() {
+    var dots = document.querySelectorAll('#pinDots span');
+    dots.forEach(function (d, i) { d.classList.toggle('filled', i < pinBuffer.length); });
+  }
+
+  function pinPress(digit) {
+    if (pinBuffer.length >= 4) return;
+    pinBuffer += digit;
+    renderPinDots();
+    if (pinBuffer.length === 4) checkPin();
+  }
+
+  function pinBackspace() {
+    pinBuffer = pinBuffer.slice(0, -1);
+    renderPinDots();
+  }
+
+  function checkPin() {
+    var expected = currentRole === 'admin' ? CFG.PIN_ADMIN : CFG.PIN_PIZZAIOLO;
+    if (pinBuffer === expected) {
+      sessionStorage.setItem('staffRole', currentRole);
+      enterApp();
+    } else {
+      document.getElementById('loginError').textContent = 'PIN errato, riprova';
+      var dots = document.getElementById('pinDots');
+      dots.classList.add('shake');
+      setTimeout(function () {
+        dots.classList.remove('shake');
+        pinBuffer = '';
+        renderPinDots();
+      }, 350);
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem('staffRole');
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    document.getElementById('appShell').classList.add('hidden');
+    document.getElementById('screen-login').classList.remove('hidden');
+    pinBuffer = '';
+    renderPinDots();
+    document.getElementById('loginError').textContent = ' ';
+  }
+
+  async function enterApp() {
+    document.getElementById('screen-login').classList.add('hidden');
+    document.getElementById('appShell').classList.remove('hidden');
+    document.getElementById('roleTag').textContent =
+      currentRole === 'admin' ? 'Admin' : 'Pizzaiolo';
+    // La sezione Conti (incassi/uscite/report pizze) e' visibile solo
+    // all'Admin: il Pizzaiolo gestisce ordini e magazzino, l'Admin controlla
+    // anche l'andamento economico.
+    document.getElementById('tabConti').classList.toggle('hidden', currentRole !== 'admin');
+    // Corregge SUBITO eventuali discordanze tra "panetti di oggi" e "pizze
+    // ordinabili" (tipico a inizio giornata, prima che qualcuno tocchi
+    // qualcosa: senza questo, "Stato del giorno" può mostrare le pizze di
+    // ieri ancora ordinabili anche se i panetti di oggi sono 0) — prima di
+    // mostrare qualunque schermata, cosi' i numeri sono giusti fin da subito.
+    var { error: errSync } = await supabaseClient.rpc('sincronizza_stato_giornaliero');
+    if (errSync) console.warn('sincronizza_stato_giornaliero:', errSync.message);
+    showScreen('magazzino');
+    subscribeRealtime();
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(refreshCurrentScreen, 15000);
+  }
+
+  // ==========================================================================
+  // Navigazione fra le schermate post-login
+  // ==========================================================================
+  function showScreen(name) {
+    if (name === 'conti' && currentRole !== 'admin') return; // solo Admin
+    currentScreen = name;
+    document.getElementById('screen-magazzino').classList.toggle('hidden', name !== 'magazzino');
+    document.getElementById('screen-stato').classList.toggle('hidden', name !== 'stato');
+    document.getElementById('screen-riordino').classList.toggle('hidden', name !== 'riordino');
+    document.getElementById('screen-conti').classList.toggle('hidden', name !== 'conti');
+    document.getElementById('tabMagazzino').classList.toggle('active', name === 'magazzino');
+    document.getElementById('tabStato').classList.toggle('active', name === 'stato');
+    document.getElementById('tabRiordino').classList.toggle('active', name === 'riordino');
+    document.getElementById('tabConti').classList.toggle('active', name === 'conti');
+    if (name === 'magazzino') loadMagazzino();
+    if (name === 'stato') loadStato();
+    if (name === 'riordino') loadRiordino();
+    if (name === 'conti') loadConti();
+  }
+
+  // ==========================================================================
+  // Schermata Magazzino
+  // ==========================================================================
+  function oggiISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function chipClassFor(stato) {
+    if (stato === 'esaurito') return 'critical';
+    if (stato === 'scorte_basse') return 'warn';
+    return 'good';
+  }
+
+  async function loadMagazzino() {
+    var { data: panetti } = await supabaseClient
+      .from('panetti').select('*').eq('data', oggiISO()).maybeSingle();
+
+    document.getElementById('panettiInput').value = panetti ? panetti.quantita_preparati : 0;
+    var usati = panetti ? panetti.quantita_utilizzati : 0;
+    var rimasti = panetti ? panetti.quantita_rimanenti : 0;
+    document.getElementById('panettiUsatiChip').textContent = usati + ' usati';
+    var chip = document.getElementById('panettiRimastiChip');
+    chip.textContent = rimasti + ' rimasti';
+    chip.className = 'chip ' + (rimasti <= 0 ? 'critical' : (rimasti <= 5 ? 'warn' : 'good'));
+
+    var { data: ingredienti } = await supabaseClient
+      .from('ingredienti').select('*').order('nome');
+
+    var list = document.getElementById('ingredientiList');
+    if (!ingredienti || !ingredienti.length) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:.85em;">Nessun ingrediente nel database ancora. Esegui i file in database/ su Supabase.</p>';
+      return;
+    }
+    list.innerHTML = ingredienti.map(function (ing) {
+      var cls = chipClassFor(ing.stato);
+      var esaurito = ing.stato === 'esaurito';
+      return '<div class="ing-row">' +
+        '<span class="dot ' + cls + '"></span>' +
+        '<span class="ing-name">' + ing.nome + '</span>' +
+        '<div class="ing-qty-edit">' +
+          '<input type="number" step="0.01" min="0" class="ing-qty-input" id="qtyInput_' + ing.id + '" value="' + Number(ing.quantita_disponibile).toFixed(2) + '">' +
+          '<span class="ing-unit">' + ing.unita_misura + '</span>' +
+          '<button type="button" class="btn-salva-agg" onclick="salvaQuantitaIngrediente(' + ing.id + ')">Salva aggiornamento</button>' +
+        '</div>' +
+        '<button type="button" class="btn-esaurito" ' + (esaurito ? 'disabled' : '') +
+          ' onclick="segnaEsaurito(' + ing.id + ')">Esaurito</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  async function salvaPanetti() {
+    var val = parseInt(document.getElementById('panettiInput').value || '0', 10);
+    if (isNaN(val) || val < 0) val = 0;
+    var { error } = await supabaseClient
+      .from('panetti')
+      .upsert({ data: oggiISO(), quantita_preparati: val }, { onConflict: 'data' });
+    if (error) { showToast('Errore: ' + error.message); return; }
+    showToast('Panetti salvati');
+    loadMagazzino();
+  }
+
+  async function segnaEsaurito(id) {
+    var { error } = await supabaseClient
+      .from('ingredienti')
+      .update({ quantita_disponibile: 0 })
+      .eq('id', id);
+    if (error) { showToast('Errore: ' + error.message); return; }
+    showToast('Segnato come esaurito');
+    loadMagazzino();
+  }
+
+  // Carico manuale: quando arriva farina/mozzarella/ecc. o dopo un
+  // conteggio a occhio, l'addetto scrive qui la quantita' che ha davvero in
+  // magazzino ORA (non un incremento: sostituisce il valore). Aggiorna anche
+  // quantita_iniziale: cosi' "Ripristina tutto" torna a QUESTA consegna vera,
+  // non al valore fisso inserito quando il database e' stato creato.
+  async function salvaQuantitaIngrediente(id) {
+    var input = document.getElementById('qtyInput_' + id);
+    if (!input) return;
+    var val = parseFloat(String(input.value || '0').replace(',', '.'));
+    if (isNaN(val) || val < 0) { showToast('Inserisci un numero valido'); return; }
+    var { error } = await supabaseClient
+      .from('ingredienti')
+      .update({ quantita_disponibile: val, quantita_iniziale: val })
+      .eq('id', id);
+    if (error) { showToast('Errore: ' + error.message); return; }
+    showToast('Aggiornamento salvato');
+    loadMagazzino();
+  }
+
+  async function ripristinaTutto() {
+    var { error } = await supabaseClient.rpc('ripristina_ingredienti');
+    if (error) { showToast('Errore: ' + error.message); return; }
+    showToast('Scorte ripristinate ai valori di inizio giornata');
+    loadMagazzino();
+  }
+
+  // ==========================================================================
+  // Schermata Stato del giorno
+  // ==========================================================================
+  async function loadStato() {
+    var { count: numPizze } = await supabaseClient
+      .from('pizze').select('*', { count: 'exact', head: true }).eq('disponibile', true);
+    document.getElementById('pizzeOrdinabiliNum').textContent = numPizze == null ? '—' : numPizze;
+
+    var { data: panettiOggi } = await supabaseClient
+      .from('panetti').select('*').eq('data', oggiISO()).maybeSingle();
+    var panettiRimasti = panettiOggi ? panettiOggi.quantita_rimanenti : 0;
+    var panettiEsauriti = panettiRimasti <= 0;
+
+    var alertCard = document.getElementById('alertPanettiCard');
+    alertCard.classList.toggle('hidden', !panettiEsauriti);
+
+    var { data: ingredienti } = await supabaseClient.from('ingredienti').select('nome, quantita_disponibile, unita_misura, stato');
+
+    var esauriti = (ingredienti || []).filter(function (i) { return i.stato === 'esaurito'; });
+    var scorteBasse = (ingredienti || []).filter(function (i) { return i.stato === 'scorte_basse'; });
+
+    var elEsauriti = document.getElementById('listaEsauriti');
+    var chipsEsauriti = esauriti.map(function (i) { return '<span class="chip critical">' + i.nome + '</span>'; });
+    if (panettiEsauriti) chipsEsauriti.unshift('<span class="chip critical">🍕 Impasto (panetti)</span>');
+    elEsauriti.innerHTML = chipsEsauriti.length
+      ? chipsEsauriti.join('')
+      : '<span class="empty">Nessuno, tutto disponibile</span>';
+
+    var elScorte = document.getElementById('listaScorteBasse');
+    elScorte.innerHTML = scorteBasse.length
+      ? scorteBasse.map(function (i) { return '<span class="chip warn">' + i.nome + ' · ' + Number(i.quantita_disponibile).toFixed(2) + ' ' + i.unita_misura + '</span>'; }).join('')
+      : '<span class="empty">Nessun avviso</span>';
+  }
+
+  // ==========================================================================
+  // Schermata Conti (solo Admin): incassi, uscite, bilancio, report pizze.
+  // ==========================================================================
+  function euro(n) {
+    return '€' + Number(n || 0).toFixed(2).replace('.', ',');
+  }
+
+  async function loadConti() {
+    var oggi = oggiISO();
+    var settimanaFa = new Date(Date.now() - 7 * 86400000);
+    var settimanaFaISO = settimanaFa.getFullYear() + '-' + String(settimanaFa.getMonth() + 1).padStart(2, '0') + '-' + String(settimanaFa.getDate()).padStart(2, '0');
+
+    // Incassi: sommiamo il campo "totale" degli ordini reali (quelli passati
+    // dal backend ordini quando un cliente conferma, non stime).
+    var { data: ordiniRecenti, error: errOrdini } = await supabaseClient
+      .from('ordini')
+      .select('quantita, totale, data_ora')
+      .gte('data_ora', settimanaFaISO);
+
+    var righeOrdini = ordiniRecenti || [];
+    var incassoOggi = 0, incassoSettimana = 0, ordiniOggiCount = 0;
+    righeOrdini.forEach(function (r) {
+      var giorno = String(r.data_ora).slice(0, 10);
+      var tot = Number(r.totale) || 0;
+      incassoSettimana += tot;
+      if (giorno === oggi) { incassoOggi += tot; ordiniOggiCount++; }
+    });
+
+    document.getElementById('incassoOggiNum').textContent = euro(incassoOggi);
+    document.getElementById('incassoOggiVal').textContent = euro(incassoOggi);
+    document.getElementById('incassoSettimanaVal').textContent = euro(incassoSettimana);
+    document.getElementById('ordiniOggiVal').textContent = ordiniOggiCount;
+    if (errOrdini) showToast('Errore incassi: ' + errOrdini.message);
+
+    // Uscite di oggi (registrate a mano dall'Admin).
+    var { data: speseOggi, error: errSpese } = await supabaseClient
+      .from('spese').select('*').eq('data', oggi).order('creato_il', { ascending: false });
+    var listaSpese = speseOggi || [];
+    var usciteOggi = listaSpese.reduce(function (s, r) { return s + Number(r.importo); }, 0);
+    document.getElementById('usciteOggiVal').textContent = euro(usciteOggi);
+    document.getElementById('listaSpeseOggi').innerHTML = listaSpese.length
+      ? listaSpese.map(function (s) {
+          return '<div class="conti-row"><span>' + s.descrizione + '</span><strong>' + euro(s.importo) + '</strong></div>';
+        }).join('')
+      : '<p style="color:var(--muted); font-size:.82em;">Nessuna uscita registrata oggi</p>';
+    if (errSpese) showToast('Errore uscite: ' + errSpese.message + ' (hai eseguito database/spese.sql su Supabase?)');
+
+    var bilancio = incassoOggi - usciteOggi;
+    var bEl = document.getElementById('bilancioOggiVal');
+    bEl.textContent = (bilancio >= 0 ? '+' : '−') + euro(Math.abs(bilancio));
+    bEl.style.color = bilancio >= 0 ? 'var(--good)' : 'var(--critical)';
+
+    // Report pizze: quante volte ordinata ciascuna pizza, da sempre — per
+    // orientarsi su quali tenere in menu e quali togliere.
+    var { data: tuttePizze } = await supabaseClient.from('pizze').select('id, nome').order('nome');
+    var { data: tuttiGliOrdini } = await supabaseClient.from('ordini').select('pizza_id, quantita');
+    var conteggio = {};
+    (tuttiGliOrdini || []).forEach(function (o) {
+      conteggio[o.pizza_id] = (conteggio[o.pizza_id] || 0) + (Number(o.quantita) || 0);
+    });
+    var righeReport = (tuttePizze || []).map(function (p) {
+      return { nome: p.nome, venduti: conteggio[p.id] || 0 };
+    }).sort(function (a, b) { return b.venduti - a.venduti; });
+
+    var elReport = document.getElementById('reportPizzeList');
+    if (!righeReport.length) {
+      elReport.innerHTML = '<p style="color:var(--muted); font-size:.85em;">Nessuna pizza nel database ancora.</p>';
+    } else {
+      var maxVenduti = righeReport[0].venduti;
+      elReport.innerHTML = righeReport.map(function (r, i) {
+        var badge = '';
+        if (r.venduti === 0) badge = '<span class="pizza-report-badge chip warn">⚠️ mai ordinata</span>';
+        else if (i === 0 && maxVenduti > 0) badge = '<span class="pizza-report-badge chip good">🔥 la più richiesta</span>';
+        return '<div class="pizza-report-row"><span class="pizza-report-name">' + r.nome + '</span>' +
+          '<span>' + r.venduti + ' vendute</span>' + badge + '</div>';
+      }).join('');
+    }
+  }
+
+  async function registraSpesa() {
+    var descrizione = (document.getElementById('spesaDescrizione').value || '').trim();
+    var importo = parseFloat(String(document.getElementById('spesaImporto').value || '').replace(',', '.'));
+    if (!descrizione) { showToast('Scrivi una descrizione'); return; }
+    if (isNaN(importo) || importo < 0) { showToast('Inserisci un importo valido'); return; }
+    var { error } = await supabaseClient.from('spese').insert({
+      data: oggiISO(), descrizione: descrizione, importo: importo
+    });
+    if (error) { showToast('Errore: ' + error.message); return; }
+    document.getElementById('spesaDescrizione').value = '';
+    document.getElementById('spesaImporto').value = '';
+    showToast('Uscita registrata');
+    loadConti();
+  }
+
+  // ==========================================================================
+  // Tempo reale: se un'altra postazione (o il backend ordini) cambia
+  // ingredienti/panetti/pizze/ordini/spese, questa dashboard si aggiorna da
+  // sola (vedi anche database/realtime.sql: le tabelle vanno registrate li').
+  // ==========================================================================
+  function subscribeRealtime() {
+    supabaseClient.channel('dashboard-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredienti' }, refreshCurrentScreen)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'panetti' }, refreshCurrentScreen)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pizze' }, refreshCurrentScreen)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini' }, refreshCurrentScreen)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'spese' }, refreshCurrentScreen)
+      .subscribe();
+  }
+
+  function refreshCurrentScreen() {
+    if (currentScreen === 'magazzino') loadMagazzino();
+    if (currentScreen === 'stato') loadStato();
+    if (currentScreen === 'riordino') loadRiordino();
+    if (currentScreen === 'conti') loadConti();
+  }
+
+  // ==========================================================================
+  // Schermata Riordino: quanto comprare, calcolato dal consumo reale.
+  // ==========================================================================
+  function fmtNum(v) {
+    var n = Math.round((Number(v) || 0) * 100) / 100;
+    return n.toString().replace('.', ',');
+  }
+
+  // Arrotonda per eccesso al mezzo (0,5): comprare "un po' di più" è normale
+  // e piu' pratico che portare a casa quantita' scomode come 4,37 kg.
+  function arrotondaAcquisto(v) {
+    return Math.ceil((Number(v) || 0) * 2) / 2;
+  }
+
+  async function loadRiordino() {
+    var el = document.getElementById('riordinoList');
+    var cardMsg = document.getElementById('riordinoMessaggioCard');
+    var { data: righe, error } = await supabaseClient.rpc('report_riordino', {
+      p_giorni_finestra: 7, p_giorni_copertura: 7
+    });
+    if (error) {
+      el.innerHTML = '<p style="color:var(--muted); font-size:.85em;">Errore: ' + error.message + ' (hai eseguito di nuovo database/funzioni.sql su Supabase, con la nuova funzione report_riordino?)</p>';
+      cardMsg.classList.add('hidden');
+      return;
+    }
+
+    var daComprare = (righe || []).filter(function (r) { return Number(r.quantita_da_comprare) > 0.01; });
+
+    if (!daComprare.length) {
+      el.innerHTML = '<p style="color:var(--muted); font-size:.85em;">✅ Tutto a posto: nessun riordino necessario al momento.</p>';
+      cardMsg.classList.add('hidden');
+      return;
+    }
+
+    el.innerHTML = daComprare.map(function (r) {
+      return '<div class="riordino-row">' +
+        '<div>' +
+          '<div class="riordino-nome">' + r.nome + '</div>' +
+          '<div class="riordino-dettaglio">scorta attuale ' + fmtNum(r.quantita_disponibile) + ' ' + r.unita_misura +
+            ' · consumo medio ' + fmtNum(r.consumo_medio_giornaliero) + ' ' + r.unita_misura + '/giorno</div>' +
+        '</div>' +
+        '<div class="riordino-qty">' + fmtNum(arrotondaAcquisto(r.quantita_da_comprare)) + ' ' + r.unita_misura + '</div>' +
+      '</div>';
+    }).join('');
+
+    var righeMessaggio = daComprare.map(function (r) {
+      return '• ' + r.nome + ': ' + fmtNum(arrotondaAcquisto(r.quantita_da_comprare)) + ' ' + r.unita_misura;
+    }).join('\n');
+
+    var oggi = new Date().toLocaleDateString('it-IT');
+    var testo = '🍕 Pizzeria da Gigi — riordino magazzino (' + oggi + ')\n\n' +
+      'Bisogna comprare:\n' + righeMessaggio +
+      '\n\nCalcolato sul consumo medio degli ultimi 7 giorni, per avere scorte sufficienti per una settimana.';
+
+    document.getElementById('riordinoTesto').value = testo;
+    cardMsg.classList.remove('hidden');
+  }
+
+  function inviaRiordinoWhatsapp() {
+    var testo = document.getElementById('riordinoTesto').value;
+    window.open('https://wa.me/?text=' + encodeURIComponent(testo), '_blank');
+  }
+</script>
+</body>
+</html>

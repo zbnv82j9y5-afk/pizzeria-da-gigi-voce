@@ -1,487 +1,467 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenAI Real-Time Chat</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🍕 Pizzeria Da Gigi - Assistente Vocale</title>
     <style>
-        body {
-            font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #0a0a0a;
-            color: #ffffff;
+        /* RESET & BASE */
+        * {
             margin: 0;
-            padding: 20px;
-            height: 100vh;
+            padding: 0;
             box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(145deg, #1a0f0a 0%, #2d1810 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
 
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            height: calc(100% - 100px);
+            background: rgba(255, 248, 240, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
+            padding: 40px 35px;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 0 2px #d4a373 inset, 0 0 0 4px #f8edd9 inset;
+            text-align: center;
+            transition: all 0.3s ease;
         }
 
+        /* HEADER */
         .logo {
-            text-align: center;
-            margin-bottom: 40px;
+            font-size: 52px;
+            margin-bottom: 4px;
+            display: block;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
         }
 
-        .chat-container {
-            border: 1px solid #333;
-            padding: 20px;
-            height: 90%;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #3d1e12;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
         }
 
-        .chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            padding: 10px;
+        .subtitle {
+            font-size: 15px;
+            color: #8b6b4f;
+            font-weight: 500;
+            background: #f5ede6;
+            display: inline-block;
+            padding: 4px 18px;
+            border-radius: 20px;
+            margin-bottom: 22px;
+            letter-spacing: 0.3px;
         }
 
-        .message {
-            margin-bottom: 20px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 16px;
-            line-height: 1.5;
-            max-width: 70%;
-            clear: both;
+        /* CARD MENU */
+        .menu-preview {
+            background: #fcf8f3;
+            border-radius: 18px;
+            padding: 16px 18px;
+            margin-bottom: 24px;
+            border: 1px solid #e8d9cc;
+            text-align: left;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
         }
 
-        .message.user {
-            background-color: #2c2c2c;
-            float: right;
-            border-bottom-right-radius: 2px;
-            border: 1px solid #404040;
-        }
-
-        .message.assistant {
-            background-color: #262626;
-            float: left;
-            border-bottom-left-radius: 2px;
-            border: 1px solid #333;
-        }
-
-        .controls {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px 24px;
-            background-color: transparent;
-            color: #ffffff;
-            border: 1px solid #ffffff;
-            font-family: inherit;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
+        .menu-preview h3 {
+            font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            color: #b48a6e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-preview h3 span {
+            background: #d4a373;
+            color: #fff;
+            font-size: 10px;
+            border-radius: 10px;
+            padding: 0 10px;
+            line-height: 18px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 16px;
+            font-size: 14px;
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px dashed #eee3d8;
+            color: #3d2a1d;
+        }
+
+        .menu-item .price {
+            color: #b48a6e;
+            font-weight: 600;
+        }
+
+        .menu-more {
+            font-size: 12px;
+            color: #b48a6e;
+            text-align: center;
+            margin-top: 6px;
+            font-style: italic;
+        }
+
+        /* MICROPHONE BUTTON */
+        .mic-wrapper {
             position: relative;
+            display: inline-block;
+            margin: 8px 0 16px;
         }
 
-        button:hover {
-            border-width: 2px;
-            transform: scale(1.02);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-        }
-
-        #audio-output {
-            display: none;
-        }
-
-        .icon-with-spinner {
+        .mic-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #d4a373, #b8834f);
+            border: none;
+            box-shadow: 0 8px 0 #7a5d44, 0 12px 30px rgba(180, 130, 90, 0.4);
+            cursor: pointer;
+            transition: all 0.08s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            min-width: 180px;
+            font-size: 44px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ffffff;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            flex-shrink: 0;
+        .mic-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #7a5d44, 0 12px 30px rgba(180, 130, 90, 0.3);
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .mic-btn.listening {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            box-shadow: 0 8px 0 #922b21, 0 0 0 10px rgba(231, 76, 60, 0.25);
+            animation: pulse 1.2s infinite;
         }
 
-        .pulse-container {
+        .mic-btn.thinking {
+            background: linear-gradient(145deg, #f39c12, #d68910);
+            box-shadow: 0 8px 0 #9c6f1f, 0 0 0 10px rgba(243, 156, 18, 0.25);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 8px 0 #922b21, 0 0 0 0 rgba(231, 76, 60, 0.4); }
+            70% { box-shadow: 0 8px 0 #922b21, 0 0 0 20px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 8px 0 #922b21, 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        .mic-status {
+            font-size: 14px;
+            font-weight: 600;
+            color: #5a3f2b;
+            margin-top: 10px;
+            min-height: 24px;
+            transition: color 0.2s;
+        }
+
+        /* CONVERSATION LOG */
+        .chat-box {
+            background: #fcf8f3;
+            border-radius: 18px;
+            padding: 16px 18px;
+            margin: 16px 0 8px;
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #e8d9cc;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #3d2a1d;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .chat-box .user {
+            color: #b8834f;
+            font-weight: 600;
+        }
+
+        .chat-box .assistant {
+            color: #2d7d46;
+            font-weight: 600;
+        }
+
+        .chat-box .empty {
+            color: #b8a392;
+            font-style: italic;
+            text-align: center;
+            padding: 12px 0;
+        }
+
+        /* FOOTER */
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #b8a392;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .footer span {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 4px;
         }
 
-        .pulse-circle {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background-color: #ffffff;
-            opacity: 0.2;
-            flex-shrink: 0;
-            transform: scale(var(--audio-level, 1));
-            transition: transform 0.1s ease;
+        /* Scrollbar */
+        .chat-box::-webkit-scrollbar {
+            width: 4px;
         }
-
-        .mute-toggle {
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            flex-shrink: 0;
+        .chat-box::-webkit-scrollbar-track {
+            background: #f0e8e0;
+            border-radius: 8px;
         }
-
-        .mute-toggle svg {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        #start-button {
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 16px 24px;
-            border-radius: 4px;
-            font-size: 14px;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .toast.error {
-            background-color: #f44336;
-            color: white;
-        }
-
-        .toast.warning {
-            background-color: #ffd700;
-            color: black;
+        .chat-box::-webkit-scrollbar-thumb {
+            background: #d4a373;
+            border-radius: 8px;
         }
     </style>
 </head>
-
 <body>
-    <div id="error-toast" class="toast"></div>
-    <div class="container">
-        <div class="logo">
-            <h1>OpenAI Real-Time Chat</h1>
+
+<div class="container">
+    <!-- LOGO -->
+    <span class="logo">🍕</span>
+    <h1>Da Gigi</h1>
+    <div class="subtitle">🇮🇹 Pizzeria d'asporto</div>
+
+    <!-- MENU ANTEPRIMA -->
+    <div class="menu-preview">
+        <h3>📋 Menu del giorno <span>caldo</span></h3>
+        <div class="menu-grid">
+            <div class="menu-item"><span>Margherita</span><span class="price">€5.00</span></div>
+            <div class="menu-item"><span>Diavola</span><span class="price">€7.00</span></div>
+            <div class="menu-item"><span>Capricciosa</span><span class="price">€8.50</span></div>
+            <div class="menu-item"><span>Bufala</span><span class="price">€7.50</span></div>
+            <div class="menu-item"><span>Marinara</span><span class="price">€4.50</span></div>
+            <div class="menu-item"><span>Quattro Stag.</span><span class="price">€8.00</span></div>
         </div>
-        <div class="chat-container">
-            <div class="chat-messages" id="chat-messages"></div>
-        </div>
-        <div class="controls">
-            <button id="start-button">Start Conversation</button>
-        </div>
+        <div class="menu-more">+ bevande e dolci • chiedimi pure!</div>
     </div>
-    <audio id="audio-output"></audio>
 
-    <script>
-        let peerConnection;
-        let webrtc_id;
-        let isMuted = false;
-        const audioOutput = document.getElementById('audio-output');
-        const startButton = document.getElementById('start-button');
-        const chatMessages = document.getElementById('chat-messages');
+    <!-- MICROFONO -->
+    <div class="mic-wrapper">
+        <button class="mic-btn" id="micButton" title="Parla con l'assistente">
+            🎤
+        </button>
+    </div>
+    <div class="mic-status" id="statusText">🔇 Premilo per parlare</div>
 
-        let audioLevel = 0;
-        let animationFrame;
-        let audioContext, analyser, audioSource;
+    <!-- LOG CONVERSAZIONE -->
+    <div class="chat-box" id="chatBox">
+        <div class="empty">🗣️ Il tuo assistente è pronto...<br>premi il microfono e parla!</div>
+    </div>
 
-        const micIconSVG = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>`;
+    <!-- FOOTER -->
+    <div class="footer">
+        <span>⏱️ Consegna 30-40 min</span>
+        <span>📞 333 1234567</span>
+        <span>🟢 online</span>
+    </div>
+</div>
 
-        const micMutedIconSVG = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-            </svg>`;
+<script>
+    // --- ELEMENTI DOM ---
+    const micBtn = document.getElementById('micButton');
+    const statusText = document.getElementById('statusText');
+    const chatBox = document.getElementById('chatBox');
 
-        function updateButtonState() {
-            const button = document.getElementById('start-button');
-            button.innerHTML = '';
+    // --- STATO ---
+    let isListening = false;
+    let isThinking = false;
+    let conversation = [];
 
-            if (peerConnection && (peerConnection.connectionState === 'connecting' || peerConnection.connectionState === 'new')) {
-                const spinner = document.createElement('div');
-                spinner.className = 'spinner';
-
-                const text = document.createElement('span');
-                text.textContent = 'Connecting...';
-
-                button.appendChild(spinner);
-                button.appendChild(text);
-            } else if (peerConnection && peerConnection.connectionState === 'connected') {
-                const pulseCircle = document.createElement('div');
-                pulseCircle.className = 'pulse-circle';
-
-                const micIcon = document.createElement('div');
-                micIcon.className = 'mute-toggle';
-                micIcon.innerHTML = isMuted ? micMutedIconSVG : micIconSVG;
-                micIcon.addEventListener('click', toggleMute);
-
-                const text = document.createElement('span');
-                text.textContent = 'Stop Conversation';
-
-                button.appendChild(pulseCircle);
-                button.appendChild(micIcon);
-                button.appendChild(text);
-            } else {
-                const text = document.createElement('span');
-                text.textContent = 'Start Conversation';
-                button.appendChild(text);
-            }
+    // --- FUNZIONI UI ---
+    function setStatus(text, state = 'idle') {
+        statusText.textContent = text;
+        micBtn.className = 'mic-btn';
+        if (state === 'listening') {
+            micBtn.classList.add('listening');
+        } else if (state === 'thinking') {
+            micBtn.classList.add('thinking');
         }
+    }
 
-        function toggleMute(event) {
-            event.stopPropagation();
-            if (!peerConnection || peerConnection.connectionState !== 'connected') return;
+    function addMessage(role, text) {
+        // Rimuovi il placeholder vuoto se presente
+        const empty = chatBox.querySelector('.empty');
+        if (empty) empty.remove();
 
-            isMuted = !isMuted;
-            console.log("Mute toggled:", isMuted);
+        const p = document.createElement('div');
+        const prefix = role === 'user' ? '🧑‍🍳 Tu: ' : '🤖 Gigi: ';
+        p.innerHTML = `<span class="${role}">${prefix}</span>${text}`;
+        chatBox.appendChild(p);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        conversation.push({ role, text });
+    }
 
-            peerConnection.getSenders().forEach(sender => {
-                if (sender.track && sender.track.kind === 'audio') {
-                    sender.track.enabled = !isMuted;
-                    console.log(`Audio track ${sender.track.id} enabled: ${!isMuted}`);
-                }
+    // --- GESTIONE AUDIO CON FastRTC (WebRTC) ---
+    let peerConnection = null;
+    let dataChannel = null;
+    let audioStream = null;
+
+    async function startConversation() {
+        if (isListening) return;
+
+        try {
+            // Richiedi microfono
+            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            setStatus('🎙️ Connessione...', 'listening');
+
+// Crea connessione WebRTC al server FastRTC
+const SERVER_URL = "http://127.0.0.1:7860"; // URL del server FastRTC
+
+const config = { 
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] 
+};
+peerConnection = new RTCPeerConnection(config);
+
+// Aggiungi traccia audio
+audioStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, audioStream);
+});
+
+// Crea data channel per messaggi di testo (opzionale)
+dataChannel = peerConnection.createDataChannel('chat');
+dataChannel.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'transcript') {
+        addMessage('user', data.text);
+    } else if (data.type === 'response') {
+        addMessage('assistant', data.text);
+        setStatus('✅ Risposta ricevuta', 'idle');
+        isListening = false;
+    }
+};
+
+// Crea offerta SDP
+const offer = await peerConnection.createOffer();
+await peerConnection.setLocalDescription(offer);
+
+// Invia offerta al server FastRTC
+try {
+    const response = await fetch(`${SERVER_URL}/rtc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            sdp: offer.sdp, 
+            type: offer.type 
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Errore server: ${response.status}`);
+    }
+    
+    const answer = await response.json();
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    
+    setStatus('🎙️ Ascolto...', 'listening');
+    isListening = true;
+    
+} catch (err) {
+    console.error('Errore connessione:', err);
+    setStatus('⚠️ Errore connessione al server', 'idle');
+    isListening = false;
+}
+            // Aggiungi traccia audio
+            audioStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, audioStream);
             });
 
-            updateButtonState();
-        }
-
-        function setupAudioVisualization(stream) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            audioSource = audioContext.createMediaStreamSource(stream);
-            audioSource.connect(analyser);
-            analyser.fftSize = 64;
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-            function updateAudioLevel() {
-                analyser.getByteFrequencyData(dataArray);
-                const average = Array.from(dataArray).reduce((a, b) => a + b, 0) / dataArray.length;
-                audioLevel = average / 255;
-
-                const pulseCircle = document.querySelector('.pulse-circle');
-                if (pulseCircle) {
-                    pulseCircle.style.setProperty('--audio-level', 1 + audioLevel);
+            // Crea data channel per messaggi di controllo (opzionale)
+            dataChannel = peerConnection.createDataChannel('chat');
+            dataChannel.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'transcript') {
+                    addMessage('user', data.text);
+                } else if (data.type === 'response') {
+                    addMessage('assistant', data.text);
+                    setStatus('✅ Risposta ricevuta', 'idle');
+                    isListening = false;
                 }
-
-                animationFrame = requestAnimationFrame(updateAudioLevel);
-            }
-            updateAudioLevel();
-        }
-
-        function showError(message) {
-            const toast = document.getElementById('error-toast');
-            toast.textContent = message;
-            toast.className = 'toast error';
-            toast.style.display = 'block';
-
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 5000);
-        }
-
-        async function setupWebRTC() {
-            isConnecting = true;
-            const config = __RTC_CONFIGURATION__ || {
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
             };
-            peerConnection = new RTCPeerConnection(config);
 
-            const timeoutId = setTimeout(() => {
-                const toast = document.getElementById('error-toast');
-                toast.textContent = "Connection is taking longer than usual. Are you on a VPN?";
-                toast.className = 'toast warning';
-                toast.style.display = 'block';
+            // Crea offerta SDP
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
 
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 5000);
-            }, 5000);
+            // Invia offerta al server (FastRTC gestisce questo)
+            // NOTA: questo è un placeholder, FastRTC ha il suo meccanismo.
+            // Per ora, usiamo il sistema di FastRTC via fetch.
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: true
-                });
+            setStatus('🎙️ Ascolto...', 'listening');
+            isListening = true;
 
-                setupAudioVisualization(stream);
+            // Simula la ricezione di un messaggio (test)
+            // Quando il server risponderà, dataChannel.onmessage lo gestirà.
 
-                stream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, stream);
-                });
-
-                peerConnection.addEventListener('track', (evt) => {
-                    if (audioOutput.srcObject !== evt.streams[0]) {
-                        audioOutput.srcObject = evt.streams[0];
-                        audioOutput.play();
-                    }
-                });
-
-                peerConnection.onicecandidate = ({ candidate }) => {
-                    if (candidate) {
-                        console.debug("Sending ICE candidate", candidate);
-                        fetch('/webrtc/offer', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                candidate: candidate.toJSON(),
-                                webrtc_id: webrtc_id,
-                                type: "ice-candidate",
-                            })
-                        })
-                    }
-                };
-
-                const dataChannel = peerConnection.createDataChannel('text');
-                dataChannel.onmessage = (event) => {
-                    const eventJson = JSON.parse(event.data);
-                    if (eventJson.type === "error") {
-                        showError(eventJson.message);
-                    }
-                };
-
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                peerConnection.addEventListener('connectionstatechange', () => {
-                    console.log('connectionstatechange', peerConnection.connectionState);
-                    if (peerConnection.connectionState === 'connected') {
-                        clearTimeout(timeoutId);
-                        const toast = document.getElementById('error-toast');
-                        toast.style.display = 'none';
-                    }
-                    updateButtonState();
-                });
-
-                webrtc_id = Math.random().toString(36).substring(7);
-
-                const response = await fetch('/webrtc/offer', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sdp: peerConnection.localDescription.sdp,
-                        type: peerConnection.localDescription.type,
-                        webrtc_id: webrtc_id
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-
-                const serverResponse = await response.json();
-                console.log('Server response:', serverResponse);
-
-                if (serverResponse.status === 'failed') {
-                    showError(serverResponse.meta.error === 'concurrency_limit_reached'
-                        ? `Too many connections. Maximum limit is ${serverResponse.meta.limit}`
-                        : serverResponse.meta.error);
-                    stop();
-                    return;
-                }
-
-                await peerConnection.setRemoteDescription(serverResponse);
-
-                const eventSource = new EventSource('/outputs?webrtc_id=' + webrtc_id);
-                eventSource.addEventListener("output", (event) => {
-                    const eventJson = JSON.parse(event.data);
-                    addMessage(eventJson.role, eventJson.content);
-                });
-            } catch (err) {
-                clearTimeout(timeoutId);
-                console.error('Error setting up WebRTC:', err);
-                showError(`Connection failed: ${err.message || err}`);
-                stop();
-            }
+        } catch (err) {
+            console.error('Errore microfono:', err);
+            setStatus('⚠️ Impossibile accedere al microfono', 'idle');
+            isListening = false;
         }
+    }
 
-        function addMessage(role, content) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', role);
-            messageDiv.textContent = content;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+    function stopConversation() {
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
         }
-
-        function stop() {
-            if (animationFrame) {
-                cancelAnimationFrame(animationFrame);
-            }
-            if (audioContext) {
-                audioContext.close();
-                audioContext = null;
-                analyser = null;
-                audioSource = null;
-            }
-            if (peerConnection) {
-                if (peerConnection.getTransceivers) {
-                    peerConnection.getTransceivers().forEach(transceiver => {
-                        if (transceiver.stop) {
-                            transceiver.stop();
-                        }
-                    });
-                }
-
-                if (peerConnection.getSenders) {
-                    peerConnection.getSenders().forEach(sender => {
-                        if (sender.track && sender.track.stop) sender.track.stop();
-                    });
-                }
-                console.log('closing');
-                peerConnection.close();
-            }
-            updateButtonState();
-            audioLevel = 0;
+        if (audioStream) {
+            audioStream.getTracks().forEach(t => t.stop());
+            audioStream = null;
         }
+        isListening = false;
+        setStatus('🔇 Fermato', 'idle');
+    }
 
-        startButton.addEventListener('click', (event) => {
-            if (event.target.closest('.mute-toggle')) {
-                return;
-            }
+    // --- INTERAZIONE BOTTONE ---
+    micBtn.addEventListener('click', () => {
+        if (isListening) {
+            stopConversation();
+        } else {
+            // Se il server è già avviato, usa il sistema FastRTC
+            // Per ora, simula una risposta di test
+            addMessage('user', '📦 Ordine di test');
+            addMessage('assistant', 'Grazie! La tua Margherita arriverà tra 30 minuti.');
+            setStatus('✅ Test completato', 'idle');
+            
+            // NOTA: la vera integrazione WebRTC con FastRTC è più complessa
+            // e dipende dall'endpoint /rtc del server.
+            // Per ora usiamo una demo manuale.
+        }
+    });
 
-            console.log('clicked');
-            console.log(peerConnection, peerConnection?.connectionState);
-            if (!peerConnection || peerConnection.connectionState !== 'connected') {
-                setupWebRTC();
-            } else {
-                console.log('stopping');
-                stop();
-            }
-        });
-    </script>
+    // --- COMANDI DA TERMINALE PER SVILUPPO ---
+    console.log('🍕 Assistente Pizzeria Da Gigi');
+    console.log('Interfaccia pronta. Premi il microfono per testare.');
+    console.log('Per integrazione reale con FastRTC, usare WebRTC su /rtc');
+</script>
+
 </body>
-
 </html>
+

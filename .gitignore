@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 .env
+venv/
+_backup_pre_merge/
+output.log

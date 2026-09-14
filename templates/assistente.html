@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistente - Pizzeria da Gigi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f0e1;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            color: #c0392b;
+            font-size: 1.8em;
+        }
+
+        .btn-back {
+            padding: 10px 20px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: #7f8c8d;
+        }
+
+        .chat-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 2px solid #ecf0f1;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 18px;
+            border-radius: 15px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.assistente {
+            background: #c0392b;
+            color: white;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+
+        .message.utente {
+            background: #2c3e50;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message .time {
+            font-size: 0.7em;
+            opacity: 0.7;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 30px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .input-area input:focus {
+            outline: none;
+            border-color: #c0392b;
+        }
+
+        .input-area button {
+            padding: 12px 30px;
+            background: #c0392b;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .input-area button:hover {
+            background: #e74c3c;
+            transform: scale(1.05);
+        }
+
+        .pizza-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #ecf0f1;
+        }
+
+        .pizza-suggestions button {
+            padding: 5px 15px;
+            background: #ecf0f1;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pizza-suggestions button:hover {
+            background: #c0392b;
+            color: white;
+        }
+
+        .order-summary {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 2px solid #27ae60;
+            display: none;
+        }
+
+        .order-summary.show {
+            display: block;
+        }
+
+        .order-summary h3 {
+            color: #27ae60;
+            margin-bottom: 10px;
+        }
+
+        .order-summary ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .order-summary li {
+            padding: 5px 0;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .order-summary .total {
+            font-weight: 700;
+            font-size: 1.2em;
+            color: #c0392b;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #c0392b;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .btn-order {
+            width: 100%;
+            padding: 15px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn-order:hover {
+            background: #2ecc71;
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            .header h1 {
+                font-size: 1.3em;
+            }
+            .message {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📞 Assistente Pizzeria</h1>
+            <a href="index.html" class="btn-back">← Torna Indietro</a>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message assistente">
+                Ciao! Sono l'assistente di Pizzeria da Gigi 🍕<br>
+                Posso aiutarti a scegliere le tue pizze preferite.<br>
+                Dimmi cosa desideri o scrivi "menu" per vedere tutte le pizze.
+                <span class="time">Ora</span>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Scrivi il tuo messaggio..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">Invia</button>
+        </div>
+
+        <div class="pizza-suggestions">
+            <button onclick="quickAdd('MARGHERITA')">🍕 Margherita</button>
+            <button onclick="quickAdd('DIAVOLA')">🌶️ Diavola</button>
+            <button onclick="quickAdd('CAPRICCIOSA')">🍄 Capricciosa</button>
+            <button onclick="quickAdd('SALMONE')">🐟 Salmone</button>
+            <button onclick="quickAdd('QUATTRO FORMAGGI')">🧀 4 Formaggi</button>
+            <button onclick="sendMessageText('menu')">📋 Mostra Menu</button>
+            <button onclick="sendMessageText('ordine')">🛒 Vedi Ordine</button>
+            <button onclick="sendMessageText('aiuto')">❓ Aiuto</button>
+        </div>
+
+        <div class="order-summary" id="orderSummary">
+            <h3>📋 Riepilogo Ordine</h3>
+            <ul id="orderList"></ul>
+            <div class="total">
+                <span>TOTALE</span>
+                <span id="totalAmount">€ 0,00</span>
+            </div>
+            <button class="btn-order" onclick="confirmOrder()">✅ Conferma Ordine</button>
+        </div>
+    </div>
+
+    <script>
+        // Dati pizze (stessi del menu)
+        const pizzeAssistente = [
+            { num: 1, nome: "MARINARA", composizione: "pomodoro, aglio, origano", grande: 3.50, piccola: 2.50 },
+            { num: 2, nome: "MARGHERITA", composizione: "pomodoro, mozzarella", grande: 4.50, piccola: 3.00 },
+            { num: 3, nome: "ROMANA", composizione: "pomodoro, mozzarella, acciughe, capperi", grande: 5.00, piccola: 3.50 },
+            { num: 4, nome: "TOSCANA", composizione: "pomodoro, mozzarella, salsiccia, cipolla", grande: 5.00, piccola: 3.50 },
+            { num: 5, nome: "COMPLETA", composizione: "pomodoro, mozzarella, funghi, carciofi, prosciutto, uovo", grande: 5.50,
+                piccola: 3.50 },
+            { num: 6, nome: "IMPERIALE", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive", grande: 6.00,
+                piccola: 4.00 },
+            { num: 7, nome: "CARDINALE", composizione: "pomodoro, mozzarella, acciughe, capperi, olive", grande: 6.00,
+                piccola: 4.00 },
+            { num: 8, nome: "VENEZIANA", composizione: "pomodoro, mozzarella, cipolla, acciughe", grande: 6.50, piccola: 4.50 },
+            { num: 9, nome: "WURSTEL", composizione: "pomodoro, mozzarella, wurstel", grande: 5.00, piccola: 4.00 },
+            { num: 10, nome: "CANADESE", composizione: "pomodoro, mozzarella, bacon, cipolla", grande: 6.00, piccola: 4.00 },
+            { num: 11, nome: "DIAVOLA", composizione: "pomodoro, mozzarella, salame piccante", grande: 6.00, piccola: 4.00 },
+            { num: 12, nome: "SALSICCIA", composizione: "pomodoro, mozzarella, salsiccia", grande: 6.50, piccola: 4.50 },
+            { num: 13, nome: "SARDA", composizione: "pomodoro, mozzarella, pancetta, cipolla, pecorino", grande: 7.00,
+                piccola: 4.50 },
+            { num: 14, nome: "BOSCANOLA", composizione: "pomodoro, mozzarella, funghi, salsiccia", grande: 7.00, piccola: 5.00 },
+            { num: 15, nome: "ARRABBIATA", composizione: "pomodoro, mozzarella, salame piccante, peperoncino", grande: 7.00,
+                piccola: 5.00 },
+            { num: 16, nome: "QUATTRO STAGIONI", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive",
+                grande: 6.50, piccola: 5.00 },
+            { num: 17, nome: "CAPRICCIOSA", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive, uovo",
+                grande: 7.00, piccola: 5.00 },
+            { num: 18, nome: "TUCANO", composizione: "pomodoro, mozzarella, prosciutto cotto, funghi", grande: 6.00,
+                piccola: 4.00 },
+            { num: 19, nome: "CALZONE", composizione: "pomodoro, mozzarella, prosciutto, ricotta (chiusa)", grande: 6.50,
+                piccola: 4.50 },
+            { num: 20, nome: "CALZONE FARCTO", composizione: "pomodoro, mozzarella, prosciutto, ricotta, funghi (chiusa)",
+                grande: 7.00, piccola: 5.00 },
+            { num: 21, nome: "GORGONZOLA", composizione: "pomodoro, mozzarella, gorgonzola", grande: 6.50, piccola: 4.50 },
+            { num: 22, nome: "QUATTRO FORMAGGI", composizione: "pomodoro, mozzarella, gorgonzola, parmigiano, provola",
+                grande: 7.00, piccola: 5.00 },
+            { num: 23, nome: "PESTO", composizione: "pomodoro, mozzarella, pesto", grande: 8.50, piccola: 4.50 },
+            { num: 24, nome: "SASSARESE", composizione: "pomodoro, mozzarella, salsiccia, cipolla, pancetta", grande: 6.00,
+                piccola: 4.00 },
+            { num: 25, nome: "GRECA", composizione: "pomodoro, mozzarella, olive, cipolla, origano", grande: 6.00,
+                piccola: 4.00 },
+            { num: 26, nome: "ORTOLANA", composizione: "pomodoro, mozzarella, verdure grigliate", grande: 7.00, piccola: 5.00 },
+            { num: 27, nome: "ANTUNNA", composizione: "pomodoro, mozzarella, tonno, cipolla", grande: 6.50, piccola: 4.50 },
+            { num: 28, nome: "PORCINI", composizione: "pomodoro, mozzarella, funghi porcini", grande: 7.50, piccola: 5.50 },
+            { num: 29, nome: "TIROLESE", composizione: "pomodoro, mozzarella, speck, cipolla", grande: 8.00, piccola: 6.00 },
+            { num: 30, nome: "PATATOSA", composizione: "pomodoro, mozzarella, patate, rosmarino", grande: 6.00, piccola: 4.00 },
+            { num: 31, nome: "FURIA", composizione: "pomodoro, mozzarella, salame piccante, olive, peperoncino", grande: 7.00,
+                piccola: 5.00 },
+            { num: 32, nome: "BRESAOLA", composizione: "pomodoro, mozzarella, bresaola, rucola, scaglie di grana", grande: 7.00,
+                piccola: 5.00 },
+            { num: 33, nome: "SAN DANIELE", composizione: "pomodoro, mozzarella, prosciutto crudo San Daniele, rucola",
+                grande: 7.00, piccola: 5.00 },
+            { num: 34, nome: "PRIMAVERA", composizione: "pomodoro, mozzarella, verdure di stagione", grande: 8.00,
+                piccola: 3.50 },
+            { num: 35, nome: "LOGUDORESSE", composizione: "pomodoro, mozzarella, salsiccia, funghi, carciofi", grande: 7.50,
+                piccola: 5.50 },
+            { num: 36, nome: "SALMONE", composizione: "pomodoro, mozzarella, salmone affumicato", grande: 7.50, piccola: 5.50 },
+            { num: 37, nome: "CATALANA", composizione: "pomodoro, mozzarella, acciughe, capperi, olive, origano", grande: 7.50,
+                piccola: 5.50 },
+            { num: 38, nome: "CARBONARA", composizione: "pomodoro, mozzarella, uovo, pancetta, pecorino", grande: 7.50,
+                piccola: 5.50 },
+            { num: 39, nome: "MARE E MONTI", composizione: "pomodoro, mozzarella, frutti di mare, funghi", grande: 8.00,
+                piccola: 5.00 },
+            { num: 40, nome: "CAMPAGNOLA", composizione: "pomodoro, mozzarella, cavallo, patate al forno", grande: 7.50,
+                piccola: 6.50 }
+        ];
+
+        let carrelloAssistente = JSON.parse(localStorage.getItem('carrelloAssistente')) || {};
+
+        function saveCartAssistente() {
+            localStorage.setItem('carrelloAssistente', JSON.stringify(carrelloAssistente));
+        }
+
+        function getPizzaByNome(nome) {
+            return pizzeAssistente.find(p => p.nome.toLowerCase() === nome.toLowerCase());
+        }
+
+        function formatPrice(price) {
+            return '€ ' + price.toFixed(2).replace('.', ',');
+        }
+
+        function addMessage(text, type) {
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            const time = new Date();
+            const timeStr = time.getHours().toString().padStart(2, '0') + ':' +
+                time.getMinutes().toString().padStart(2, '0');
+            div.innerHTML = text + `<span class="time">${timeStr}</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessageText(text) {
+            addMessage(text, 'utente');
+            processCommand(text);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!text) return;
+            addMessage(text, 'utente');
+            input.value = '';
+            processCommand(text);
+        }
+
+        function processCommand(text) {
+            const lower = text.toLowerCase();
+
+            // Comandi speciali
+            if (lower === 'menu' || lower === 'mostra menu' || lower === 'pizze') {
+                let menuText = '📋 Ecco il nostro menu completo:<br><br>';
+                pizzeAssistente.forEach(p => {
+                    menuText +=
+                        `🍕 <b>${p.nome}</b> - ${p.composizione}<br>Grande ${formatPrice(p.grande)} | Piccola ${formatPrice(p.piccola)}<br><br>`;
+                });
+                menuText += 'Dimmi quale pizza vuoi ordinare! (es. "voglio una Margherita grande")';
+                addMessage(menuText, 'assistente');
+                return;
+            }
+
+            if (lower === 'ordine' || lower === 'vedi ordine' || lower === 'carrello') {
+                showOrderSummary();
+                return;
+            }
+
+            if (lower === 'aiuto' || lower === 'help') {
+                addMessage(
+                    '💡 <b>Comandi disponibili:</b><br>' +
+                    '• "menu" - Mostra tutte le pizze<br>' +
+                    '• "voglio [nome pizza] [grande/piccola]" - Aggiungi pizza al carrello<br>' +
+                    '• "ordine" - Mostra il riepilogo dell\'ordine<br>' +
+                    '• "elimina [nome pizza]" - Rimuovi pizza dal carrello<br>' +
+                    '• "svuota" - Svuota il carrello<br>' +
+                    '• "conferma" - Conferma l\'ordine<br>' +
+                    '• "aiuto" - Mostra questo messaggio',
+                    'assistente'
+                );
+                return;
+            }
+
+            if (lower === 'svuota' || lower === 'svuota carrello') {
+                carrelloAssistente = {};
+                saveCartAssistente();
+                document.getElementById('orderSummary').classList.remove('show');
+                addMessage('🔄 Carrello svuotato!', 'assistente');
+                return;
+            }
+
+            if (lower === 'conferma' || lower === 'conferma ordine') {
+                confirmOrderAssistente();
+                return;
+            }
+
+            // Cerca "elimina [nome]"
+            const eliminaMatch = text.match(/elimina\s+(.+)/i);
+            if (eliminaMatch) {
+                const nome = eliminaMatch[1].trim();
+                const pizza = getPizzaByNome(nome);
+                if (pizza && carrelloAssistente[pizza.num]) {
+                    delete carrelloAssistente[pizza.num];
+                    saveCartAssistente();
+                    addMessage(`✅ Rimossa ${pizza.nome} dal carrello!`, 'assistente');
+                    showOrderSummary();
+                } else {
+                    addMessage(`❌ Non trovo "${nome}" nel carrello.`, 'assistente');
+                }
+                return;
+            }
+
+            // Cerca "voglio [nome] [grande/piccola]"
+            const voglioMatch = text.match(/voglio\s+(.+?)(?:\s+(grande|piccola))?/i);
+            if (voglioMatch) {
+                const nome = voglioMatch[1].trim();
+                const formato = voglioMatch[2] ? voglioMatch[2].toLowerCase() : 'grande';
+                const pizza = getPizzaByNome(nome);
+
+                if (pizza) {
+                    if (!carrelloAssistente[pizza.num]) {
+                        carrelloAssistente[pizza.num] = { qty: 1, formato: formato };
+                    } else {
+                        carrelloAssistente[pizza.num].qty += 1;
+                        carrelloAssistente[pizza.num].formato = formato;
+                    }
+                    saveCartAssistente();
+                    const prezzo = formato === 'grande' ? pizza.grande : pizza.piccola;
+                    addMessage(
+                        `✅ Aggiunta <b>${pizza.nome}</b> (${formato}) al carrello!<br>Prezzo: ${formatPrice(prezzo)}`,
+                        'assistente'
+                    );
+                    showOrderSummary();
+                } else {
+                    addMessage(`❌ Non trovo "${nome}" nel menu. Digita "menu" per vedere tutte le pizze.`, 'assistente');
+                }
+                return;
+            }
+
+            // Risposta generica
+            addMessage(
+                '🤔 Non ho capito. Puoi dirmi:<br>' +
+                '• "voglio [nome pizza] [grande/piccola]" per ordinare<br>' +
+                '• "menu" per vedere tutte le pizze<br>' +
+                '• "ordine" per vedere il carrello<br>' +
+                '• "aiuto" per tutti i comandi',
+                'assistente'
+            );
+        }
+
+        function showOrderSummary() {
+            const summary = document.getElementById('orderSummary');
+            const list = document.getElementById('orderList');
+            const totalSpan = document.getElementById('totalAmount');
+
+            const entries = Object.entries(carrelloAssistente);
+            if (entries.length === 0) {
+                list.innerHTML = '<li style="color:#95a5a6; text-align:center;">Il carrello è vuoto</li>';
+                totalSpan.textContent = '€ 0,00';
+                summary.classList.remove('show');
+                addMessage('🛒 Il carrello è vuoto. Aggiungi qualche pizza!', 'assistente');
+                return;
+            }
+
+            let total = 0;
+            let html = '';
+            entries.forEach(([num, data]) => {
+                const pizza = pizzeAssistente.find(p => p.num === parseInt(num));
+                if (!pizza) return;
+                const prezzo = data.formato === 'grande' ? pizza.grande : pizza.piccola;
+                const subtotal = prezzo * data.qty;
+                total += subtotal;
+                html += `<li>${data.qty}x ${pizza.nome} (${data.formato}) - ${formatPrice(prezzo)} cad. = ${formatPrice(subtotal)}</li>`;
+            });
+
+            list.innerHTML = html;
+            totalSpan.textContent = formatPrice(total);
+            summary.classList.add('show');
+        }
+
+        function confirmOrderAssistente() {
+            const entries = Object.entries(carrelloAssistente);
+            if (entries.length === 0) {
+                addMessage('❌ Il carrello è vuoto! Aggiungi almeno una pizza.', 'assistente');
+                return;
+            }
+
+            let orderText = '📋 <b>Ordine confermato!</b><br><br>';
+            let total = 0;
+            entries.forEach(([num, data]) => {
+                const pizza = pizzeAssistente.find(p => p.num === parseInt(num));
+                if (!pizza) return;
+                const prezzo = data.formato === 'grande' ? pizza.grande : pizza.piccola;
+                const subtotal = prezzo * data.qty;
+                total += subtotal;
+                orderText += `${data.qty}x ${pizza.nome} (${data.formato}) - ${formatPrice(subtotal)}<br>`;
+            });
+            orderText += `<br><b>TOTALE: ${formatPrice(total)}</b><br><br>`;
+            orderText += '✅ Ordine inviato alla cucina! Grazie e buon appetito! 🍕';
+
+            addMessage(orderText, 'assistente');
+
+            // Salva nel localStorage principale per il riepilogo
+            const carrelloPrincipale = {};
+            entries.forEach(([num, data]) => {
+                carrelloPrincipale[num] = data.qty;
+            });
+            localStorage.setItem('carrello', JSON.stringify(carrelloPrincipale));
+
+            // Svuota il carrello assistente
+            carrelloAssistente = {};
+            saveCartAssistente();
+            document.getElementById('orderSummary').classList.remove('show');
+        }
+
+        function quickAdd(nome) {
+            const text = `voglio ${nome} grande`;
+            addMessage(text, 'utente');
+            processCommand(text);
+        }
+
+        // Inizializza
+        const carrelloEsistente = JSON.parse(localStorage.getItem('carrelloAssistente')) || {};
+        carrelloAssistente = carrelloEsistente;
+        if (Object.keys(carrelloAssistente).length > 0) {
+            showOrderSummary();
+        }
+    </script>
+</body>
+</html>

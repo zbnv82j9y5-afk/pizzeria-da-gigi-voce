@@ -31,7 +31,8 @@ class Settings:
 
     def __post_init__(self):
         if not self.openai_api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
-
-
+            self.openai_api_key = os.environ.get("DEEPSEEK_API_KEY")
+            if not self.openai_api_key:
+                raise ValueError("DEEPSEEK_API_KEY environment variable is required")
+            self.base_url = "https://api.deepseek.com"
 settings = Settings()

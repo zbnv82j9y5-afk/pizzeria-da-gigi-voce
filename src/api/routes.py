@@ -1,10 +1,10 @@
 import json
 import logging
+import os
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, StreamingResponse
-from fastrtc import Stream, get_twilio_turn_credentials
-from gradio.utils import get_space
+from fastrtc import Stream, get_cloudflare_turn_credentials_async
 
 from ..config import settings
 
@@ -24,8 +24,20 @@ def set_stream(stream: Stream) -> None:
 
 @router.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
-    """Serve the main HTML page."""
-    rtc_config = get_twilio_turn_credentials() if get_space() else None
+    """Serve the main HTML page.
+
+    Su una rete "normale" (casa/telefono) la connessione WebRTC spesso
+    riesce anche senza server TURN, ma su reti piu' restrittive (aziendali,
+    alcune reti mobili) puo' fallire senza. Se e' impostata la variabile
+    d'ambiente HF_TOKEN (gratuita, vedi GIGIAI-DEPLOY.md), chiediamo le
+    credenziali TURN gratuite di Cloudflare tramite FastRTC — senza,
+    l'app funziona comunque ma potrebbe non collegarsi da certe reti."""
+    rtc_config = None
+    if os.environ.get("HF_TOKEN"):
+        try:
+            rtc_config = await get_cloudflare_turn_credentials_async(ttl=600)
+        except Exception as e:
+            logger.warning(f"Impossibile ottenere le credenziali TURN, si prosegue senza: {e}")
     html_path = settings.static_dir / "index.html"
     html_content = html_path.read_text()
     html_content = html_content.replace("__RTC_CONFIGURATION__", json.dumps(rtc_config))

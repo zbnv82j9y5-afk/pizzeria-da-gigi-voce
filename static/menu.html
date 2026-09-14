@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Pizze - Pizzeria da Gigi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Mulish:wght@400;500;600;700;800&display=swap">
+    <style>
+        :root {
+            --cream: #faf6f0;
+            --red: #c0392b;
+            --red-dark: #a93226;
+            --green: #27ae60;
+            --green-btn: #1e8449;
+            --ink: #333333;
+            --muted: #6b6459;
+            --border: rgba(51,51,51,0.14);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Mulish', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            padding: 12px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(51,34,20,0.08);
+            padding: 16px;
+        }
+
+        .checkered {
+            height: 6px;
+            border-radius: 6px 6px 0 0;
+            background-image: repeating-conic-gradient(var(--red) 0% 25%, #ffffff 0% 50%);
+            background-size: 6px 6px;
+            margin: -16px -16px 14px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+            padding: 10px 0 14px;
+            border-bottom: 2px solid #f1ece3;
+            flex-wrap: wrap;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: #ffffff;
+        }
+
+        .header-title h1 {
+            font-family: 'Caveat', cursive;
+            font-weight: 700;
+            color: var(--red);
+            font-size: 2.147em;
+            line-height: 1;
+        }
+
+        .header-title .header-sub {
+            color: var(--muted);
+            font-size: 0.881em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-back {
+            padding: 9px 16px;
+            background: #ffffff;
+            color: var(--ink);
+            border: 1.5px solid var(--border);
+            border-radius: 25px;
+            font-size: 0.96em;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-cart {
+            padding: 9px 20px;
+            background: var(--green-btn);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.96em;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 700;
+        }
+
+        .btn-cart .badge {
+            background: var(--red);
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.904em;
+            margin-left: 5px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filters input {
+            padding: 11px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 25px;
+            flex: 1;
+            min-width: 200px;
+            font-size: 18.1px;
+            font-family: 'Mulish', sans-serif;
+            width: 100%;
+            color: var(--ink);
+        }
+
+        .filters input:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+
+        .size-note {
+            font-size: 0.904em;
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        .pizza-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 90px; /* spazio per la barra fissa del carrello in basso */
+        }
+
+        .pizza-card {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            transition: border-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .pizza-card.sold-out { opacity: 0.55; }
+
+        .sold-out-badge {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: var(--red);
+            color: #fff;
+            font-size: 0.768em;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 999px;
+            letter-spacing: 0.02em;
+        }
+
+        .pizza-card.highlight {
+            border-color: var(--red);
+            border-width: 1.5px;
+            background: #fdf5f3;
+        }
+
+        .pizza-card:hover { border-color: var(--red); }
+
+        .pizza-head {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .pizza-num { color: var(--red); font-weight: 700; font-size: 0.904em; }
+        .pizza-nome { font-weight: 700; color: var(--ink); font-size: 1.13em; }
+        .pizza-comp { color: var(--muted); font-size: 0.927em; margin-bottom: 10px; line-height: 1.3; }
+        .allergeni-tag { font-weight: 700; color: var(--red); white-space: nowrap; }
+
+        .legenda-allergeni { margin: 4px 0 10px; border: 1px solid var(--border); border-radius: 10px; }
+        .legenda-allergeni summary {
+            cursor: pointer; font-size: 0.927em; font-weight: 700; color: var(--muted);
+            padding: 9px 10px; list-style: none;
+        }
+        .legenda-allergeni summary::-webkit-details-marker { display: none; }
+        .legenda-allergeni summary::before { content: 'ℹ️  '; }
+        .legenda-lista {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px;
+            font-size: 0.859em; color: var(--muted); padding: 0 10px 10px;
+        }
+        .legenda-lista div b { color: var(--ink); }
+        @media (max-width: 380px) { .legenda-lista { grid-template-columns: 1fr; } }
+
+        .size-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .size-row .size-label { width: 66px; font-size: 0.96em; font-weight: 700; color: var(--ink); }
+        .size-row .size-price { width: 70px; font-size: 0.96em; color: var(--muted); }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .step-btn {
+            width: 27px;
+            height: 27px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: #ffffff;
+            color: var(--ink);
+            font-size: 16.9px;
+            font-weight: 800;
+            font-family: 'Mulish', sans-serif;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .step-btn.plus { background: var(--green-btn); border-color: var(--green-btn); color: #ffffff; }
+        .step-btn:active { transform: scale(0.92); }
+
+        .size-row input[type="number"] {
+            width: 40px;
+            padding: 6px 2px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18.1px;
+            font-family: 'Mulish', sans-serif;
+        }
+
+        .size-row input[type="number"]:focus { outline: none; border-color: var(--red); }
+
+        .pizza-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--border);
+        }
+
+        .pizza-subtotal { font-weight: 800; color: var(--green-btn); font-size: 1.017em; }
+
+        .btn-add {
+            padding: 8px 18px;
+            background: var(--red);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 0.96em;
+            font-weight: 700;
+            font-family: 'Mulish', sans-serif;
+        }
+
+        .btn-add:hover { background: var(--red-dark); }
+
+        .no-results { text-align: center; color: var(--muted); padding: 30px 10px; }
+
+        .sticky-cart-bar {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--green-btn);
+            color: white;
+            padding: 12px 16px;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.18);
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .sticky-cart-bar .sticky-info { display: flex; flex-direction: column; line-height: 1.3; }
+        .sticky-cart-bar .sticky-count { font-size: 0.904em; opacity: 0.9; }
+        .sticky-cart-bar .sticky-total { font-size: 1.299em; font-weight: 800; }
+
+        .sticky-cart-bar .sticky-btn {
+            background: white;
+            color: var(--green-btn);
+            padding: 10px 18px;
+            border-radius: 22px;
+            font-weight: 800;
+            font-size: 1.017em;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 6px; }
+            .container { padding: 12px; border-radius: 14px; }
+            .header-title h1 { font-size: 1.808em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="checkered"></div>
+        <div class="header">
+            <div class="header-title">
+                <h1>Da Gigi</h1>
+                <div class="header-sub">🍕 Menu Pizze</div>
+            </div>
+            <div class="header-actions">
+                <a href="index_pizzeria.html" class="btn-back">🏠 Home</a>
+                <a href="riepilogo.html" class="btn-cart" id="cartBtn">
+                    🛒 Carrello
+                    <span class="badge" id="cartCount">0</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Cerca pizza..." onkeyup="filterList()">
+        </div>
+        <div class="size-note">Ogni pizza è disponibile in due formati: Grande e Piccola (più economica). Indica la quantità per il formato che vuoi e premi Aggiungi.</div>
+
+        <details class="legenda-allergeni">
+            <summary>Legenda numeri allergeni</summary>
+            <div class="legenda-lista">
+                <div><b>1</b> Cereali contenenti glutine</div>
+                <div><b>2</b> Crostacei</div>
+                <div><b>3</b> Uova</div>
+                <div><b>4</b> Pesce</div>
+                <div><b>5</b> Arachidi</div>
+                <div><b>6</b> Soia</div>
+                <div><b>7</b> Latte e derivati (lattosio)</div>
+                <div><b>8</b> Frutta a guscio</div>
+                <div><b>9</b> Sedano</div>
+                <div><b>10</b> Senape</div>
+                <div><b>11</b> Semi di sesamo</div>
+                <div><b>12</b> Anidride solforosa e solfiti</div>
+                <div><b>13</b> Lupini</div>
+                <div><b>14</b> Molluschi</div>
+            </div>
+        </details>
+
+        <div class="pizza-list" id="pizzaList">
+            <!-- Le schede vengono generate da JavaScript -->
+        </div>
+    </div>
+
+    <!-- Barra fissa: sempre visibile mentre si scorrono le pizze, se il carrello non è vuoto -->
+    <div class="sticky-cart-bar" id="stickyBar">
+        <div class="sticky-info">
+            <span class="sticky-count" id="stickyCount">0 pizze</span>
+            <span class="sticky-total" id="stickyTotal">€ 0,00</span>
+        </div>
+        <a href="riepilogo.html" class="sticky-btn">Vai al Riepilogo →</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/static/js/supabase-config.js"></script>
+    <script src="/static/js/supabase-menu-sync.js"></script>
+    <script>
+        // Dati del menu dal PDF
+        const pizze = [
+            { num: 1, nome: "MARINARA", composizione: "pomodoro, aglio, origano", allergeni: [1], grande: 3.50, piccola: 2.50 },
+            { num: 2, nome: "MARGHERITA", composizione: "pomodoro, mozzarella", allergeni: [1, 7], grande: 4.50, piccola: 3.00 },
+            { num: 3, nome: "ROMANA", composizione: "pomodoro, mozzarella, acciughe, capperi", allergeni: [1, 4, 7], grande: 5.00, piccola: 3.50 },
+            { num: 4, nome: "TOSCANA", composizione: "pomodoro, mozzarella, salsiccia, cipolla", allergeni: [1, 7], grande: 5.00, piccola: 3.50 },
+            { num: 5, nome: "COMPLETA", composizione: "pomodoro, mozzarella, funghi, carciofi, prosciutto, uovo", allergeni: [1, 3, 7], grande: 5.00, piccola: 3.50 },
+            { num: 6, nome: "IMPERIALE", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive", allergeni: [1, 7], grande: 6.00, piccola: 4.00 },
+            { num: 7, nome: "CARDINALE", composizione: "pomodoro, mozzarella, acciughe, capperi, olive", allergeni: [1, 4, 7], grande: 6.00, piccola: 4.00 },
+            { num: 8, nome: "VENEZIANA", composizione: "pomodoro, mozzarella, cipolla, acciughe", allergeni: [1, 4, 7], grande: 6.50, piccola: 4.50 },
+            { num: 9, nome: "WURSTEL", composizione: "pomodoro, mozzarella, wurstel", allergeni: [1, 7], grande: 5.00, piccola: 4.00 },
+            { num: 10, nome: "CANADESE", composizione: "pomodoro, mozzarella, bacon, cipolla", allergeni: [1, 7], grande: 6.00, piccola: 4.00 },
+            { num: 11, nome: "DIAVOLA", composizione: "pomodoro, mozzarella, salame piccante", allergeni: [1, 7], grande: 6.00, piccola: 4.00 },
+            { num: 12, nome: "SALSICCIA", composizione: "pomodoro, mozzarella, salsiccia", allergeni: [1, 7], grande: 6.50, piccola: 4.50 },
+            { num: 13, nome: "SARDA", composizione: "pomodoro, mozzarella, pancetta, cipolla, pecorino", allergeni: [1, 7], grande: 7.00, piccola: 4.50 },
+            { num: 14, nome: "BOSCANOLA", composizione: "pomodoro, mozzarella, funghi, salsiccia", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 15, nome: "ARRABBIATA", composizione: "pomodoro, mozzarella, salame piccante, peperoncino", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 16, nome: "QUATTRO STAGIONI", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive", allergeni: [1, 7], grande: 6.50, piccola: 5.00 },
+            { num: 17, nome: "CAPRICCIOSA", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive, uovo", allergeni: [1, 3, 7], grande: 7.00, piccola: 5.00 },
+            { num: 18, nome: "TUCANO", composizione: "pomodoro, mozzarella, prosciutto cotto, funghi", allergeni: [1, 7], grande: 6.00, piccola: 4.00 },
+            { num: 19, nome: "CALZONE", composizione: "pomodoro, mozzarella, prosciutto, ricotta (chiusa)", allergeni: [1, 7], grande: 6.50, piccola: 4.50 },
+            { num: 20, nome: "CALZONE FARCTO", composizione: "pomodoro, mozzarella, prosciutto, ricotta, funghi (chiusa)", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 21, nome: "GORGONZOLA", composizione: "pomodoro, mozzarella, gorgonzola", allergeni: [1, 7], grande: 6.50, piccola: 4.50 },
+            { num: 22, nome: "QUATTRO FORMAGGI", composizione: "pomodoro, mozzarella, gorgonzola, parmigiano, provola", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 23, nome: "PESTO", composizione: "pomodoro, mozzarella, pesto", allergeni: [1, 7], grande: 8.50, piccola: 4.50 },
+            { num: 24, nome: "SASSARESE", composizione: "pomodoro, mozzarella, salsiccia, cipolla, pancetta", allergeni: [1, 7], grande: 6.00, piccola: 4.00 },
+            { num: 25, nome: "GRECA", composizione: "pomodoro, mozzarella, olive, cipolla, origano", allergeni: [1, 7], grande: 6.00, piccola: 4.00 },
+            { num: 26, nome: "ORTOLANA", composizione: "pomodoro, mozzarella, verdure grigliate", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 27, nome: "ANTUNNA", composizione: "pomodoro, mozzarella, tonno, cipolla", allergeni: [1, 4, 7], grande: 6.50, piccola: 4.50 },
+            { num: 28, nome: "PORCINI", composizione: "pomodoro, mozzarella, funghi porcini", allergeni: [1, 7], grande: 7.50, piccola: 5.50 },
+            { num: 29, nome: "TIROLESE", composizione: "pomodoro, mozzarella, speck, cipolla", allergeni: [1, 7], grande: 8.00, piccola: 6.00 },
+            { num: 30, nome: "PATATOSA", composizione: "pomodoro, mozzarella, patate, rosmarino", allergeni: [1, 7], grande: 6.00, piccola: 4.00 },
+            { num: 31, nome: "FURIA", composizione: "pomodoro, mozzarella, salame piccante, olive, peperoncino", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 32, nome: "BRESAOLA", composizione: "pomodoro, mozzarella, bresaola, rucola, scaglie di grana", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 33, nome: "SAN DANIELE", composizione: "pomodoro, mozzarella, prosciutto crudo San Daniele, rucola", allergeni: [1, 7], grande: 7.00, piccola: 5.00 },
+            { num: 34, nome: "PRIMAVERA", composizione: "pomodoro, mozzarella, verdure di stagione", allergeni: [1, 7], grande: 8.00, piccola: 3.50 },
+            { num: 35, nome: "LOGUDORESSE", composizione: "pomodoro, mozzarella, salsiccia, funghi, carciofi", allergeni: [1, 7], grande: 7.50, piccola: 5.50 },
+            { num: 36, nome: "SALMONE", composizione: "pomodoro, mozzarella, salmone affumicato", allergeni: [1, 4, 7], grande: 7.50, piccola: 5.50 },
+            { num: 37, nome: "CATALANA", composizione: "pomodoro, mozzarella, acciughe, capperi, olive, origano", allergeni: [1, 4, 7], grande: 7.00, piccola: 5.50 },
+            { num: 38, nome: "CARBONARA", composizione: "pomodoro, mozzarella, uovo, pancetta, pecorino", allergeni: [1, 3, 7], grande: 7.50, piccola: 5.50 },
+            { num: 39, nome: "MARE E MONTI", composizione: "pomodoro, mozzarella, frutti di mare, funghi", allergeni: [1, 2, 7, 14], grande: 8.00, piccola: 5.00 },
+            { num: 40, nome: "CAMPAGNOLA", composizione: "pomodoro, mozzarella, cavallo, patate al forno", allergeni: [1, 7], grande: 7.50, piccola: 6.50 }
+        ];
+
+        // Carrello: memorizza per ogni pizza la quantità grande e piccola
+        // { "1": { grande: 2, piccola: 1 }, ... }
+        let carrello = JSON.parse(localStorage.getItem('carrello')) || {};
+
+        function saveCart() {
+            localStorage.setItem('carrello', JSON.stringify(carrello));
+            updateCartBadge();
+        }
+
+        function formatPrice(price) {
+            return '€ ' + price.toFixed(2).replace('.', ',');
+        }
+
+        function isPizzaEsaurita(nome) {
+            return typeof PizzeriaLiveMenu !== 'undefined' && !PizzeriaLiveMenu.isDisponibile(nome.toUpperCase());
+        }
+
+        function getSubtotal(num) {
+            const pizza = pizze.find(p => p.num === num);
+            if (!pizza) return 0;
+            const item = carrello[num] || { grande: 0, piccola: 0 };
+            return (item.grande || 0) * pizza.grande + (item.piccola || 0) * pizza.piccola;
+        }
+
+        function getCartTotals() {
+            let count = 0;
+            let total = 0;
+            Object.entries(carrello).forEach(([num, item]) => {
+                const pizza = pizze.find(p => p.num === parseInt(num));
+                if (!pizza) return;
+                count += (item.grande || 0) + (item.piccola || 0);
+                total += (item.grande || 0) * pizza.grande + (item.piccola || 0) * pizza.piccola;
+            });
+            return { count, total };
+        }
+
+        function updateCartBadge() {
+            const { count, total } = getCartTotals();
+            document.getElementById('cartCount').textContent = count;
+
+            const bar = document.getElementById('stickyBar');
+            if (count > 0) {
+                document.getElementById('stickyCount').textContent = count + (count === 1 ? ' pizza' : ' pizze');
+                document.getElementById('stickyTotal').textContent = formatPrice(total);
+                bar.style.display = 'flex';
+            } else {
+                bar.style.display = 'none';
+            }
+        }
+
+        function renderList(filter = '') {
+            const list = document.getElementById('pizzaList');
+            list.innerHTML = '';
+            const filterLower = filter.toLowerCase().trim();
+            const filtered = pizze.filter(p =>
+                p.nome.toLowerCase().includes(filterLower) ||
+                p.composizione.toLowerCase().includes(filterLower)
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="no-results">Nessuna pizza trovata</div>';
+                updateCartBadge();
+                return;
+            }
+
+            filtered.forEach(p => {
+                const item = carrello[p.num] || { grande: 0, piccola: 0 };
+                const subtotal = getSubtotal(p.num);
+                // Evidenzia la scheda se si arriva da un link "Scopri" con questo nome esatto
+                const isHighlighted = filterLower.length > 2 && p.nome.toLowerCase() === filterLower;
+
+                const esaurita = isPizzaEsaurita(p.nome);
+                const card = document.createElement('div');
+                card.className = 'pizza-card' + (isHighlighted ? ' highlight' : '') + (esaurita ? ' sold-out' : '');
+                card.innerHTML = `
+                    ${esaurita ? '<div class="sold-out-badge">Esaurita per oggi</div>' : ''}
+                    <div class="pizza-head">
+                        <span class="pizza-num">${String(p.num).padStart(2, '0')}</span>
+                        <span class="pizza-nome">${p.nome}</span>
+                    </div>
+                    <div class="pizza-comp">${p.composizione} <span class="allergeni-tag">(${p.allergeni.join(',')})</span></div>
+                    <div class="size-row">
+                        <span class="size-label">Grande</span>
+                        <span class="size-price">${formatPrice(p.grande)}</span>
+                        <div class="stepper">
+                            <button type="button" class="step-btn minus" ${esaurita ? 'disabled' : ''} onclick="decrementQty(${p.num}, 'grande')" aria-label="Diminuisci">&minus;</button>
+                            <input type="number" min="0" max="99" value="${item.grande || 0}" ${esaurita ? 'disabled' : ''}
+                                   id="qty_grande_${p.num}" onchange="updateQty(${p.num}, 'grande')">
+                            <button type="button" class="step-btn plus" ${esaurita ? 'disabled' : ''} onclick="incrementQty(${p.num}, 'grande')" aria-label="Aumenta">+</button>
+                        </div>
+                    </div>
+                    <div class="size-row">
+                        <span class="size-label">Piccola</span>
+                        <span class="size-price">${formatPrice(p.piccola)}</span>
+                        <div class="stepper">
+                            <button type="button" class="step-btn minus" ${esaurita ? 'disabled' : ''} onclick="decrementQty(${p.num}, 'piccola')" aria-label="Diminuisci">&minus;</button>
+                            <input type="number" min="0" max="99" value="${item.piccola || 0}" ${esaurita ? 'disabled' : ''}
+                                   id="qty_piccola_${p.num}" onchange="updateQty(${p.num}, 'piccola')">
+                            <button type="button" class="step-btn plus" ${esaurita ? 'disabled' : ''} onclick="incrementQty(${p.num}, 'piccola')" aria-label="Aumenta">+</button>
+                        </div>
+                    </div>
+                    <div class="pizza-footer">
+                        <span class="pizza-subtotal">${subtotal > 0 ? formatPrice(subtotal) : ''}</span>
+                        ${esaurita ? '' : `<button class="btn-add" onclick="addToCart(${p.num})">➕ Aggiungi</button>`}
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+
+            updateCartBadge();
+        }
+
+        function incrementQty(num, formato) {
+            const input = document.getElementById(`qty_${formato}_${num}`);
+            let val = (parseInt(input.value) || 0) + 1;
+            if (val > 99) val = 99;
+            input.value = val;
+            updateQty(num, formato);
+        }
+
+        function decrementQty(num, formato) {
+            const input = document.getElementById(`qty_${formato}_${num}`);
+            let val = (parseInt(input.value) || 0) - 1;
+            if (val < 0) val = 0;
+            input.value = val;
+            updateQty(num, formato);
+        }
+
+        function updateQty(num, formato) {
+            const input = document.getElementById(`qty_${formato}_${num}`);
+            let val = parseInt(input.value) || 0;
+            if (val < 0) val = 0;
+            if (val > 99) val = 99;
+            input.value = val;
+
+            if (!carrello[num]) carrello[num] = { grande: 0, piccola: 0 };
+            carrello[num][formato] = val;
+
+            // Se entrambi sono 0, rimuovi la voce
+            if (carrello[num].grande === 0 && carrello[num].piccola === 0) {
+                delete carrello[num];
+            }
+
+            saveCart();
+            renderList(document.getElementById('searchInput').value);
+        }
+
+        function addToCart(num) {
+            const inputGrande = document.getElementById(`qty_grande_${num}`);
+            const inputPiccola = document.getElementById(`qty_piccola_${num}`);
+
+            let valGrande = parseInt(inputGrande.value) || 0;
+            let valPiccola = parseInt(inputPiccola.value) || 0;
+
+            // Se entrambi sono 0, aggiungi 1 grande di default
+            if (valGrande === 0 && valPiccola === 0) {
+                valGrande = 1;
+                inputGrande.value = 1;
+            }
+
+            if (!carrello[num]) carrello[num] = { grande: 0, piccola: 0 };
+            if (valGrande > 0) carrello[num].grande = valGrande;
+            if (valPiccola > 0) carrello[num].piccola = valPiccola;
+
+            if (carrello[num].grande === 0 && carrello[num].piccola === 0) {
+                delete carrello[num];
+            }
+
+            saveCart();
+            renderList(document.getElementById('searchInput').value);
+
+            // Feedback
+            const btn = event.target;
+            btn.textContent = '✅ Aggiunto!';
+            setTimeout(() => { btn.textContent = '➕ Aggiungi'; }, 1000);
+        }
+
+        function filterList() {
+            const filter = document.getElementById('searchInput').value;
+            renderList(filter);
+        }
+
+        // Se si arriva da "Scopri qualcosa di nuovo" in home (?cerca=nome pizza),
+        // pre-compila la ricerca per portare subito alla pizza giusta.
+        function leggiRicercaDaUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('cerca') || '';
+        }
+
+        // Inizializza
+        const ricercaIniziale = leggiRicercaDaUrl();
+        document.getElementById('searchInput').value = ricercaIniziale;
+        renderList(ricercaIniziale);
+        updateCartBadge();
+
+        // Se il database e' configurato, la disponibilita' delle pizze si
+        // aggiorna da sola (anche in tempo reale) senza ricaricare la pagina.
+        // Se non e' configurato, questa chiamata non fa nulla: il menu resta
+        // esattamente come prima.
+        if (typeof PizzeriaLiveMenu !== 'undefined') {
+            PizzeriaLiveMenu.start(function () {
+                renderList(document.getElementById('searchInput').value);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Dipendenze SOLO per il sito ordini/dashboard (serve.py + pizzeria_ordini.py).
+# Un file separato da pyproject.toml perche' quello include anche le
+# librerie dell'assistente vocale (fastrtc, gradio, openai...), molto piu'
+# pesanti e non necessarie per ospitare online il sito clienti/staff.
+fastapi>=0.115.0
+uvicorn>=0.32.0
+httpx>=0.27.0

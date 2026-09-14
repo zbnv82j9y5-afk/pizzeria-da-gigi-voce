@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riepilogo Ordine - Pizzeria da Gigi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Mulish:wght@400;500;600;700;800&display=swap">
+<script src="https://staging.online.satispay.com/web-button.js"></script>
+    <style>
+        :root {
+            --cream: #faf6f0;
+            --red: #c0392b;
+            --red-dark: #a93226;
+            --green: #27ae60;
+            --green-btn: #1e8449;
+            --ink: #333333;
+            --muted: #6b6459;
+            --border: rgba(51,51,51,0.14);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Mulish', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 14px 40px rgba(51,34,20,0.10);
+            padding: 26px 22px;
+        }
+
+        .checkered {
+            height: 6px;
+            border-radius: 6px 6px 0 0;
+            background-image: repeating-conic-gradient(var(--red) 0% 25%, #ffffff 0% 50%);
+            background-size: 6px 6px;
+            margin: -26px -22px 18px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1ece3;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header h1 {
+            font-family: 'Caveat', cursive;
+            font-weight: 700;
+            color: var(--red);
+            font-size: 2em;
+        }
+
+        .header h1 .icon { font-size: 0.7em; }
+
+        .btn-back {
+            padding: 9px 18px;
+            background: #ffffff;
+            color: var(--ink);
+            border: 1.5px solid var(--border);
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        /* ===== DATI CLIENTE / MODALITA ===== */
+        .customer-section {
+            background: var(--cream);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .customer-section h3 {
+            color: var(--ink);
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .form-row input, .indirizzo-input {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Mulish', sans-serif;
+            background: #ffffff;
+            color: var(--ink);
+        }
+
+        .form-row input:focus, .indirizzo-input:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+
+        .indirizzo-input { width: 100%; margin-bottom: 4px; }
+
+        .delivery-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 12px;
+            border: 1.5px solid var(--border);
+            background: white;
+            color: var(--ink);
+            border-radius: 10px;
+            font-size: 0.85em;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Mulish', sans-serif;
+        }
+
+        .mode-btn.active {
+            background: var(--red);
+            border-color: var(--red);
+            color: white;
+        }
+
+        .field-hint { font-size: 0.75em; color: var(--muted); }
+
+        .form-error {
+            display: none;
+            background: rgba(192,57,43,0.08);
+            border: 1.5px solid var(--red);
+            color: var(--red-dark);
+            font-size: 0.85em;
+            font-weight: 700;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .form-row input.field-error, .indirizzo-input.field-error {
+            border-color: var(--red);
+            animation: field-shake 0.4s;
+        }
+
+        @keyframes field-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* ===== STATO VUOTO ===== */
+        .empty-cart { text-align: center; padding: 50px 20px; }
+        .empty-cart .icon { font-size: 4em; margin-bottom: 15px; }
+        .empty-cart h2 { color: var(--muted); margin-bottom: 10px; }
+        .empty-cart p { color: #8a8175; }
+
+        .empty-cart .btn-order {
+            margin-top: 20px;
+            padding: 12px 40px;
+            background: var(--red);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .empty-cart .btn-order:hover { background: var(--red-dark); }
+
+        .last-order-banner { text-align: center; padding: 6px 10px 18px; color: var(--muted); font-size: 0.9em; }
+
+        .success-banner {
+            background: #eafaf1;
+            border: 2px solid var(--green);
+            color: var(--green-btn);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        /* ===== TABELLA ORDINE ===== */
+        .order-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+
+        .order-table thead { background: var(--ink); color: white; }
+
+        .order-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+
+        .order-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1ece3;
+            font-size: 0.9em;
+        }
+
+        .order-table .item-name { font-weight: 700; color: var(--ink); }
+        .order-table .item-price { font-weight: 700; color: var(--red); }
+
+        .order-table .qty-cell { padding-left: 4px; padding-right: 4px; }
+
+        .qty-stepper {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mini-step {
+            width: 23px;
+            height: 23px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: #ffffff;
+            color: var(--ink);
+            font-size: 14px;
+            font-weight: 800;
+            font-family: 'Mulish', sans-serif;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .mini-step.plus { background: var(--green-btn); border-color: var(--green-btn); color: #ffffff; }
+        .mini-step:active { transform: scale(0.92); }
+
+        .qty-val { min-width: 14px; text-align: center; font-weight: 700; font-size: 0.9em; }
+
+        .recap-customer {
+            background: var(--cream);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 0.9em;
+            color: var(--ink);
+            line-height: 1.6;
+        }
+
+        .recap-customer b { color: var(--ink); }
+
+        .order-total {
+            background: var(--cream);
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-top: 16px;
+            border: 1.5px solid var(--green);
+        }
+
+        .order-total .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 0.95em;
+            color: var(--muted);
+        }
+
+        .order-total .grand {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2em;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 2px solid var(--red);
+        }
+
+        .order-total .label { font-weight: 700; color: var(--ink); }
+        .order-total .amount { font-size: 1.3em; font-weight: 800; color: var(--red); }
+
+        .order-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .order-actions .btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 30px;
+            font-size: 0.95em;
+            font-weight: 700;
+            font-family: 'Mulish', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .order-actions .btn-confirm { background: var(--green-btn); color: white; }
+        .order-actions .btn-confirm:hover { background: #17693a; }
+
+        .order-actions .btn-clear { background: var(--red); color: white; }
+        .order-actions .btn-clear:hover { background: var(--red-dark); }
+
+        .order-actions .btn-edit { background: transparent; color: #3d5a80; border: 1.5px solid #3d5a80; }
+        .order-actions .btn-edit:hover { background: rgba(61,90,128,0.08); }
+
+        .order-actions .btn-home { background: #8a8175; color: white; }
+        .order-actions .btn-home:hover { background: #746c61; }
+
+        .confirm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 20px;
+        }
+
+        .confirm-overlay.open { display: flex; }
+
+        .confirm-box {
+            position: relative;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 28px 20px 22px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+        }
+
+        .confirm-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: none;
+            background: #f1ece3;
+            color: var(--ink);
+            font-size: 20px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .confirm-close:hover { background: #e5ddd0; }
+
+        .confirm-box p {
+            font-size: 0.95em;
+            color: var(--ink);
+            margin-bottom: 18px;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .confirm-actions button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 24px;
+            font-size: 0.9em;
+            font-weight: 700;
+            font-family: 'Mulish', sans-serif;
+            cursor: pointer;
+        }
+
+        .confirm-actions .btn-cancel { background: #f1ece3; color: var(--ink); }
+        .confirm-actions .btn-cancel:hover { background: #e5ddd0; }
+
+        .confirm-actions .btn-danger { background: var(--red); color: white; }
+        .confirm-actions .btn-danger:hover { background: var(--red-dark); }
+
+        .detail-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9em; color: var(--muted); }
+
+        @media (max-width: 480px) {
+            body { padding: 8px; }
+            .container { padding: 16px; border-radius: 14px; }
+            .header h1 { font-size: 1.6em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="checkered"></div>
+        <div class="header">
+            <h1><span class="icon">🛒</span> Riepilogo Ordine</h1>
+            <a href="index_pizzeria.html" class="btn-back">← Torna alla Home</a>
+        </div>
+
+        <div id="customerSection" class="customer-section" style="display:none;">
+            <h3>👤 I tuoi dati</h3>
+            <div class="form-error" id="formError"></div>
+            <div class="form-row">
+                <input type="text" id="custNome" placeholder="Nome e cognome" oninput="saveCustomerData(); this.classList.remove('field-error')">
+                <input type="tel" id="custTelefono" placeholder="Telefono" oninput="saveCustomerData(); this.classList.remove('field-error')">
+            </div>
+            <div class="delivery-toggle">
+                <button type="button" class="mode-btn" id="modeRitiro" onclick="setModalita('ritiro')">🏪 Ritiro in negozio</button>
+                <button type="button" class="mode-btn" id="modeConsegna" onclick="setModalita('consegna')">🏠 Consegna a domicilio (+<span id="deliveryFeeLabel"></span>)</button>
+            </div>
+            <input type="text" id="custIndirizzo" class="indirizzo-input" placeholder="Indirizzo di consegna" oninput="saveCustomerData(); this.classList.remove('field-error')" style="display:none;">
+            <div class="field-hint">Questi dati restano salvati su questo dispositivo per il prossimo ordine.</div>
+        </div>
+
+        <div id="orderContent">
+            <!-- Generato da JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Dati del menu (stessi del menu.html)
+        const pizzeRiepilogo = [
+            { num: 1, nome: "MARINARA", composizione: "pomodoro, aglio, origano", grande: 3.50, piccola: 2.50 },
+            { num: 2, nome: "MARGHERITA", composizione: "pomodoro, mozzarella", grande: 4.50, piccola: 3.00 },
+            { num: 3, nome: "ROMANA", composizione: "pomodoro, mozzarella, acciughe, capperi", grande: 5.00, piccola: 3.50 },
+            { num: 4, nome: "TOSCANA", composizione: "pomodoro, mozzarella, salsiccia, cipolla", grande: 5.00, piccola: 3.50 },
+            { num: 5, nome: "COMPLETA", composizione: "pomodoro, mozzarella, funghi, carciofi, prosciutto, uovo", grande: 5.00, piccola: 3.50 },
+            { num: 6, nome: "IMPERIALE", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive", grande: 6.00, piccola: 4.00 },
+            { num: 7, nome: "CARDINALE", composizione: "pomodoro, mozzarella, acciughe, capperi, olive", grande: 6.00, piccola: 4.00 },
+            { num: 8, nome: "VENEZIANA", composizione: "pomodoro, mozzarella, cipolla, acciughe", grande: 6.50, piccola: 4.50 },
+            { num: 9, nome: "WURSTEL", composizione: "pomodoro, mozzarella, wurstel", grande: 5.00, piccola: 4.00 },
+            { num: 10, nome: "CANADESE", composizione: "pomodoro, mozzarella, bacon, cipolla", grande: 6.00, piccola: 4.00 },
+            { num: 11, nome: "DIAVOLA", composizione: "pomodoro, mozzarella, salame piccante", grande: 6.00, piccola: 4.00 },
+            { num: 12, nome: "SALSICCIA", composizione: "pomodoro, mozzarella, salsiccia", grande: 6.50, piccola: 4.50 },
+            { num: 13, nome: "SARDA", composizione: "pomodoro, mozzarella, pancetta, cipolla, pecorino", grande: 7.00, piccola: 4.50 },
+            { num: 14, nome: "BOSCANOLA", composizione: "pomodoro, mozzarella, funghi, salsiccia", grande: 7.00, piccola: 5.00 },
+            { num: 15, nome: "ARRABBIATA", composizione: "pomodoro, mozzarella, salame piccante, peperoncino", grande: 7.00, piccola: 5.00 },
+            { num: 16, nome: "QUATTRO STAGIONI", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive", grande: 6.50, piccola: 5.00 },
+            { num: 17, nome: "CAPRICCIOSA", composizione: "pomodoro, mozzarella, prosciutto, funghi, carciofi, olive, uovo", grande: 7.00, piccola: 5.00 },
+            { num: 18, nome: "TUCANO", composizione: "pomodoro, mozzarella, prosciutto cotto, funghi", grande: 6.00, piccola: 4.00 },
+            { num: 19, nome: "CALZONE", composizione: "pomodoro, mozzarella, prosciutto, ricotta (chiusa)", grande: 6.50, piccola: 4.50 },
+            { num: 20, nome: "CALZONE FARCTO", composizione: "pomodoro, mozzarella, prosciutto, ricotta, funghi (chiusa)", grande: 7.00, piccola: 5.00 },
+            { num: 21, nome: "GORGONZOLA", composizione: "pomodoro, mozzarella, gorgonzola", grande: 6.50, piccola: 4.50 },
+            { num: 22, nome: "QUATTRO FORMAGGI", composizione: "pomodoro, mozzarella, gorgonzola, parmigiano, provola", grande: 7.00, piccola: 5.00 },
+            { num: 23, nome: "PESTO", composizione: "pomodoro, mozzarella, pesto", grande: 8.50, piccola: 4.50 },
+            { num: 24, nome: "SASSARESE", composizione: "pomodoro, mozzarella, salsiccia, cipolla, pancetta", grande: 6.00, piccola: 4.00 },
+            { num: 25, nome: "GRECA", composizione: "pomodoro, mozzarella, olive, cipolla, origano", grande: 6.00, piccola: 4.00 },
+            { num: 26, nome: "ORTOLANA", composizione: "pomodoro, mozzarella, verdure grigliate", grande: 7.00, piccola: 5.00 },
+            { num: 27, nome: "ANTUNNA", composizione: "pomodoro, mozzarella, tonno, cipolla", grande: 6.50, piccola: 4.50 },
+            { num: 28, nome: "PORCINI", composizione: "pomodoro, mozzarella, funghi porcini", grande: 7.50, piccola: 5.50 },
+            { num: 29, nome: "TIROLESE", composizione: "pomodoro, mozzarella, speck, cipolla", grande: 8.00, piccola: 6.00 },
+            { num: 30, nome: "PATATOSA", composizione: "pomodoro, mozzarella, patate, rosmarino", grande: 6.00, piccola: 4.00 },
+            { num: 31, nome: "FURIA", composizione: "pomodoro, mozzarella, salame piccante, olive, peperoncino", grande: 7.00, piccola: 5.00 },
+            { num: 32, nome: "BRESAOLA", composizione: "pomodoro, mozzarella, bresaola, rucola, scaglie di grana", grande: 7.00, piccola: 5.00 },
+            { num: 33, nome: "SAN DANIELE", composizione: "pomodoro, mozzarella, prosciutto crudo San Daniele, rucola", grande: 7.00, piccola: 5.00 },
+            { num: 34, nome: "PRIMAVERA", composizione: "pomodoro, mozzarella, verdure di stagione", grande: 8.00, piccola: 3.50 },
+            { num: 35, nome: "LOGUDORESSE", composizione: "pomodoro, mozzarella, salsiccia, funghi, carciofi", grande: 7.50, piccola: 5.50 },
+            { num: 36, nome: "SALMONE", composizione: "pomodoro, mozzarella, salmone affumicato", grande: 7.50, piccola: 5.50 },
+            { num: 37, nome: "CATALANA", composizione: "pomodoro, mozzarella, acciughe, capperi, olive, origano", grande: 7.00, piccola: 5.50 },
+            { num: 38, nome: "CARBONARA", composizione: "pomodoro, mozzarella, uovo, pancetta, pecorino", grande: 7.50, piccola: 5.50 },
+            { num: 39, nome: "MARE E MONTI", composizione: "pomodoro, mozzarella, frutti di mare, funghi", grande: 8.00, piccola: 5.00 },
+            { num: 40, nome: "CAMPAGNOLA", composizione: "pomodoro, mozzarella, cavallo, patate al forno", grande: 7.50, piccola: 6.50 }
+        ];
+
+        // 👉 MODIFICA QUI l'importo della maggiorazione per la consegna a domicilio
+        const DELIVERY_FEE = 2.50;
+
+        let modalita = 'ritiro'; // 'ritiro' oppure 'consegna'
+        let justConfirmed = false;
+        let justCleared = false;
+
+        function formatPrice(price) {
+            return '€ ' + price.toFixed(2).replace('.', ',');
+        }
+
+        function formatDateTime(ts) {
+            try {
+                return new Date(ts).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // ===== DATI CLIENTE (persistono tra un ordine e l'altro) =====
+        function loadCustomerData() {
+            const dati = JSON.parse(localStorage.getItem('datiCliente')) || {};
+            document.getElementById('custNome').value = dati.nome || '';
+            document.getElementById('custTelefono').value = dati.telefono || '';
+            document.getElementById('custIndirizzo').value = dati.indirizzo || '';
+            modalita = dati.modalita === 'consegna' ? 'consegna' : 'ritiro';
+            document.getElementById('deliveryFeeLabel').textContent = formatPrice(DELIVERY_FEE);
+            updateModalitaUI();
+        }
+
+        function saveCustomerData() {
+            const dati = {
+                nome: document.getElementById('custNome').value,
+                telefono: document.getElementById('custTelefono').value,
+                indirizzo: document.getElementById('custIndirizzo').value,
+                modalita: modalita
+            };
+            localStorage.setItem('datiCliente', JSON.stringify(dati));
+        }
+
+        function setModalita(m) {
+            modalita = m;
+            updateModalitaUI();
+            saveCustomerData();
+            loadOrder();
+        }
+
+        function updateModalitaUI() {
+            document.getElementById('modeRitiro').classList.toggle('active', modalita === 'ritiro');
+            document.getElementById('modeConsegna').classList.toggle('active', modalita === 'consegna');
+            document.getElementById('custIndirizzo').style.display = modalita === 'consegna' ? 'block' : 'none';
+        }
+
+        // ===== MODIFICA QUANTITA' DIRETTAMENTE DAL RIEPILOGO =====
+        function adjustQty(num, formato, delta) {
+            const carrello = JSON.parse(localStorage.getItem('carrello')) || {};
+            if (!carrello[num]) carrello[num] = { grande: 0, piccola: 0 };
+            let val = (carrello[num][formato] || 0) + delta;
+            if (val < 0) val = 0;
+            if (val > 99) val = 99;
+            carrello[num][formato] = val;
+            if ((carrello[num].grande || 0) === 0 && (carrello[num].piccola || 0) === 0) {
+                delete carrello[num];
+            }
+            localStorage.setItem('carrello', JSON.stringify(carrello));
+            loadOrder();
+        }
+
+        // ===== CALCOLO TOTALI =====
+        function computeTotals(carrello) {
+            let subtotale = 0;
+            const items = [];
+            Object.entries(carrello).forEach(([num, data]) => {
+                const pizza = pizzeRiepilogo.find(p => p.num === parseInt(num));
+                if (!pizza) return;
+                const qtyGrande = data.grande || 0;
+                const qtyPiccola = data.piccola || 0;
+                const sub = qtyGrande * pizza.grande + qtyPiccola * pizza.piccola;
+                subtotale += sub;
+                items.push({ num: pizza.num, nome: pizza.nome, composizione: pizza.composizione, qtyGrande, qtyPiccola, prezzoGrande: pizza.grande, prezzoPiccola: pizza.piccola, sub });
+            });
+            const maggiorazione = modalita === 'consegna' ? DELIVERY_FEE : 0;
+            return { items, subtotale, maggiorazione, totale: subtotale + maggiorazione };
+        }
+
+        // ===== VISTA PRINCIPALE =====
+        function loadOrder() {
+            const content = document.getElementById('orderContent');
+            const customerSection = document.getElementById('customerSection');
+            const carrello = JSON.parse(localStorage.getItem('carrello')) || {};
+            const entries = Object.entries(carrello);
+
+            if (entries.length === 0) {
+                customerSection.style.display = 'none';
+                const ultimo = JSON.parse(localStorage.getItem('ultimoOrdine'));
+                if (ultimo && !justCleared) {
+                    content.innerHTML = buildRecapHTML(ultimo, justConfirmed);
+                    justConfirmed = false;
+                } else {
+                    justCleared = false;
+                    content.innerHTML = `
+                        <div class="empty-cart">
+                            <div class="icon">🛒</div>
+                            <h2>Il carrello è vuoto</h2>
+                            <p>Non hai ancora selezionato nessuna pizza.</p>
+                            <a href="menu.html" class="btn-order">🍕 Vai al Menu</a>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            customerSection.style.display = 'block';
+            const { items, subtotale, maggiorazione, totale } = computeTotals(carrello);
+
+            let html = `
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>PIZZA</th>
+                            <th class="qty-cell" style="text-align:center;">GRANDE</th>
+                            <th class="qty-cell" style="text-align:center;">PICCOLA</th>
+                            <th style="text-align:center;">TOTALE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            items.forEach(it => {
+                html += `
+                    <tr>
+                        <td class="item-name">${it.nome}</td>
+                        <td class="qty-cell" style="text-align:center;">
+                            <div class="qty-stepper">
+                                <button type="button" class="mini-step" onclick="adjustQty(${it.num}, 'grande', -1)" aria-label="Diminuisci Grande">&minus;</button>
+                                <span class="qty-val">${it.qtyGrande}</span>
+                                <button type="button" class="mini-step plus" onclick="adjustQty(${it.num}, 'grande', 1)" aria-label="Aumenta Grande">+</button>
+                            </div>
+                        </td>
+                        <td class="qty-cell" style="text-align:center;">
+                            <div class="qty-stepper">
+                                <button type="button" class="mini-step" onclick="adjustQty(${it.num}, 'piccola', -1)" aria-label="Diminuisci Piccola">&minus;</button>
+                                <span class="qty-val">${it.qtyPiccola}</span>
+                                <button type="button" class="mini-step plus" onclick="adjustQty(${it.num}, 'piccola', 1)" aria-label="Aumenta Piccola">+</button>
+                            </div>
+                        </td>
+                        <td class="item-price" style="text-align:center;">${formatPrice(it.sub)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="padding: 2px 12px 10px 12px; font-size: 0.85em; color: #6b6459; border-bottom: 1px solid #f1ece3;">
+                            ${it.composizione}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+                <div class="order-total">
+                    <div class="row"><span>Subtotale pizze</span><span>${formatPrice(subtotale)}</span></div>
+                    ${maggiorazione > 0 ? `<div class="row"><span>Consegna a domicilio</span><span>${formatPrice(maggiorazione)}</span></div>` : ''}
+                    <div class="grand">
+                        <span class="label">💰 TOTALE ORDINE</span>
+                        <span class="amount">${formatPrice(totale)}</span>
+                    </div>
+                </div>
+                <div class="order-actions">
+                    <a href="menu.html" class="btn btn-edit">✏️ Modifica Ordine</a>
+                    <button class="btn btn-clear" onclick="clearCart()">🗑️ Svuota Carrello</button>
+                </div>
+                <div style="text-align:center; font-weight:800; color:var(--muted); font-size:.82em; margin:16px 0 8px; text-transform:uppercase; letter-spacing:.04em;">Scegli come pagare</div>
+                <div class="order-actions">
+                    <button class="btn btn-confirm" onclick="confirmOrder()">✅ Conferma — pago alla consegna</button>
+                    <button class="btn btn-confirm" id="btnPagaSatispay" onclick="avviaPagamentoSatispay()" style="background:#e6007e;">📲 Paga subito con Satispay</button>
+                    <button class="btn btn-confirm" id="btnPagaStripe" onclick="avviaPagamentoStripe()" style="background:#635bff;">💳 Paga con carta</button>
+                </div>
+                ${modalita === 'consegna' ? '<p style="font-size:.78em; color:var(--muted); text-align:center; margin:-6px 0 4px;">ℹ️ Con consegna a domicilio, il pagamento alla consegna è riservato ai clienti abituali già registrati. Se non lo sei ancora, scegli il pagamento online.</p>' : ''}
+                <p id="statoPagamentoSatispay" style="display:none; margin-top:12px; font-weight:700; text-align:center; color:#c0392b;"></p>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        function buildRecapHTML(ordine, showSuccessBanner) {
+            let itemsHtml = '';
+            ordine.items.forEach(it => {
+                let detail = '';
+                if (it.qtyGrande > 0) detail += `${it.qtyGrande}x Grande `;
+                if (it.qtyPiccola > 0) detail += `${it.qtyPiccola}x Piccola`;
+                itemsHtml += `<div class="detail-row"><span>${it.nome} (${detail.trim()})</span><span>${formatPrice(it.sub)}</span></div>`;
+            });
+
+            const cliente = ordine.cliente || {};
+
+            return `
+                ${showSuccessBanner ? '<div class="success-banner">✅ Ordine confermato! Ecco il tuo promemoria.</div>' : '<div class="last-order-banner">📋 Il tuo ultimo ordine confermato — ' + formatDateTime(ordine.data) + '</div>'}
+                <div class="recap-customer">
+                    <div><b>Nome:</b> ${cliente.nome || '-'}</div>
+                    <div><b>Telefono:</b> ${cliente.telefono || '-'}</div>
+                    <div><b>Modalità:</b> ${ordine.modalita === 'consegna' ? '🏠 Consegna a domicilio' : '🏪 Ritiro in negozio'}</div>
+                    ${ordine.modalita === 'consegna' ? `<div><b>Indirizzo:</b> ${cliente.indirizzo || '-'}</div>` : ''}
+                </div>
+                <div style="margin: 6px 0 14px;">${itemsHtml}</div>
+                <div class="order-total">
+                    <div class="row"><span>Subtotale pizze</span><span>${formatPrice(ordine.subtotale)}</span></div>
+                    ${ordine.maggiorazione > 0 ? `<div class="row"><span>Consegna a domicilio</span><span>${formatPrice(ordine.maggiorazione)}</span></div>` : ''}
+                    <div class="grand">
+                        <span class="label">💰 TOTALE</span>
+                        <span class="amount">${formatPrice(ordine.totale)}</span>
+                    </div>
+                </div>
+                <div class="order-actions">
+                    <a href="menu.html" class="btn btn-confirm">🍕 Nuovo Ordine</a>
+                    <a href="index_pizzeria.html" class="btn btn-home">🏠 Home</a>
+                </div>
+            `;
+        }
+
+        function clearCart() {
+            document.getElementById('clearConfirmOverlay').classList.add('open');
+        }
+
+        function closeClearConfirm() {
+            document.getElementById('clearConfirmOverlay').classList.remove('open');
+        }
+
+        function doClearCart() {
+            localStorage.removeItem('carrello');
+            localStorage.removeItem('carrelloAssistente');
+            justCleared = true;
+            closeClearConfirm();
+            loadOrder();
+        }
+
+        function showFormError(message) {
+            const el = document.getElementById('formError');
+            if (!el) return;
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        function clearFormError() {
+            const el = document.getElementById('formError');
+            if (el) el.style.display = 'none';
+            document.querySelectorAll('.field-error').forEach(f => f.classList.remove('field-error'));
+        }
+
+        function markFieldError(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('field-error');
+        }
+
+        async function confirmOrder() {
+            clearFormError();
+            const carrello = JSON.parse(localStorage.getItem('carrello')) || {};
+            const entries = Object.entries(carrello);
+
+            if (entries.length === 0) {
+                showFormError('⚠️ Il carrello è vuoto.');
+                return;
+            }
+
+            const nome = document.getElementById('custNome').value.trim();
+            const telefono = document.getElementById('custTelefono').value.trim();
+            const indirizzo = document.getElementById('custIndirizzo').value.trim();
+
+            const campiMancanti = [];
+            if (!nome) { markFieldError('custNome'); campiMancanti.push('nome'); }
+            if (!telefono) { markFieldError('custTelefono'); campiMancanti.push('telefono'); }
+            if (campiMancanti.length > 0) {
+                const descr = campiMancanti.length === 2 ? 'i campi nome e telefono' : ('il campo ' + campiMancanti[0]);
+                showFormError('⚠️ Compila ' + descr + ' per continuare');
+                return;
+            }
+            if (modalita === 'consegna' && !indirizzo) {
+                markFieldError('custIndirizzo');
+                showFormError('⚠️ Inserisci l\'indirizzo di consegna');
+                return;
+            }
+
+            const { items, subtotale, maggiorazione, totale } = computeTotals(carrello);
+
+            // Se il database e' collegato, verifica davvero la disponibilita' e
+            // scala il magazzino prima di confermare (evita di accettare una
+            // pizza appena finita). Se non e' collegato, o non risponde in
+            // tempo, si procede come sempre: nessun rischio per il cliente.
+            const righeOrdine = [];
+            items.forEach(it => {
+                if (it.qtyGrande > 0) righeOrdine.push({ numero_menu: it.num, formato: 'grande', quantita: it.qtyGrande });
+                if (it.qtyPiccola > 0) righeOrdine.push({ numero_menu: it.num, formato: 'piccola', quantita: it.qtyPiccola });
+            });
+
+            const pulsanteConferma = document.querySelector('.btn-confirm');
+            if (pulsanteConferma) { pulsanteConferma.disabled = true; pulsanteConferma.textContent = 'Verifica in corso...'; }
+
+            let esito = null;
+            try {
+                const risposta = await fetch('/api/ordini/crea', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    signal: AbortSignal.timeout(6000),
+                    body: JSON.stringify({ items: righeOrdine, modalita, cliente: { nome, telefono, indirizzo } })
+                });
+                if (risposta.ok) esito = await risposta.json();
+            } catch (e) {
+                esito = null; // rete assente o sistema ordini non ancora attivo: si procede come sempre
+            }
+
+            if (pulsanteConferma) { pulsanteConferma.disabled = false; pulsanteConferma.textContent = '✅ Conferma Ordine'; }
+
+            if (esito && esito.verificato && !esito.ok && esito.motivo_generale) {
+                showFormError('⚠️ ' + esito.motivo_generale);
+                return;
+            }
+
+            if (esito && esito.verificato && !esito.ok) {
+                applicaEsitoParziale(carrello, righeOrdine, esito.risultati);
+                return;
+            }
+
+            const ultimoOrdine = {
+                data: Date.now(),
+                cliente: { nome, telefono, indirizzo },
+                modalita,
+                items,
+                subtotale,
+                maggiorazione,
+                totale
+            };
+
+            localStorage.setItem('ultimoOrdine', JSON.stringify(ultimoOrdine));
+            localStorage.removeItem('carrello');
+            localStorage.removeItem('carrelloAssistente');
+
+            justConfirmed = true;
+            loadOrder();
+        }
+
+        // Quando il database segnala che una o piu' pizze non sono piu'
+        // disponibili: toglie dal carrello solo le righe gia' registrate (per
+        // non farle ordinare due volte), lascia le altre cosi' il cliente puo'
+        // modificarle, e spiega chiaramente cosa e' successo.
+        function applicaEsitoParziale(carrello, righeOrdine, risultati) {
+            const problemi = [];
+            righeOrdine.forEach((riga, idx) => {
+                const esitoRiga = risultati[idx];
+                if (!esitoRiga) return;
+                if (esitoRiga.ok) {
+                    if (carrello[riga.numero_menu]) {
+                        carrello[riga.numero_menu][riga.formato] = 0;
+                        if ((carrello[riga.numero_menu].grande || 0) === 0 && (carrello[riga.numero_menu].piccola || 0) === 0) {
+                            delete carrello[riga.numero_menu];
+                        }
+                    }
+                } else {
+                    const pizza = pizzeRiepilogo.find(p => p.num === riga.numero_menu);
+                    problemi.push((pizza ? pizza.nome : ('pizza #' + riga.numero_menu)) + ': ' + (esitoRiga.motivo || 'non disponibile'));
+                }
+            });
+            localStorage.setItem('carrello', JSON.stringify(carrello));
+            loadOrder();
+            showFormError('⚠️ Alcune pizze non sono più disponibili — ' + problemi.join('; ') + '. Le altre pizze del tuo ordine sono già state registrate: modifica il carrello e conferma di nuovo per il resto.');
+        }
+
+        // ===== PAGAMENTO ONLINE CON SATISPAY (in aggiunta al pagamento alla
+        // consegna, non al posto di) =====
+        async function avviaPagamentoSatispay() {
+            clearFormError();
+            const carrello = JSON.parse(localStorage.getItem('carrello')) || {};
+            const entries = Object.entries(carrello);
+            if (entries.length === 0) {
+                showFormError('⚠️ Il carrello è vuoto.');
+                return;
+            }
+
+            const nome = document.getElementById('custNome').value.trim();
+            const telefono = document.getElementById('custTelefono').value.trim();
+            const indirizzo = document.getElementById('custIndirizzo').value.trim();
+
+            const campiMancanti = [];
+            if (!nome) { markFieldError('custNome'); campiMancanti.push('nome'); }
+            if (!telefono) { markFieldError('custTelefono'); campiMancanti.push('telefono'); }
+            if (campiMancanti.length > 0) {
+                const descr = campiMancanti.length === 2 ? 'i campi nome e telefono' : ('il campo ' + campiMancanti[0]);
+                showFormError('⚠️ Compila ' + descr + ' per continuare');
+                return;
+            }
+            if (modalita === 'consegna' && !indirizzo) {
+                markFieldError('custIndirizzo');
+                showFormError('⚠️ Inserisci l\'indirizzo di consegna');
+                return;
+            }
+
+            const righeCarrello = [];
+            entries.forEach(([num, data]) => {
+                if ((data.grande || 0) > 0) righeCarrello.push({ numero_menu: parseInt(num), formato: 'grande', quantita: data.grande });
+                if ((data.piccola || 0) > 0) righeCarrello.push({ numero_menu: parseInt(num), formato: 'piccola', quantita: data.piccola });
+            });
+
+            const bottone = document.getElementById('btnPagaSatispay');
+            bottone.disabled = true;
+            bottone.textContent = 'Un momento...';
+
+            let dati;
+            try {
+                const risposta = await fetch('/api/checkout/avvia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    signal: AbortSignal.timeout(10000),
+                    body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo } })
+                });
+                if (!risposta.ok) {
+                    const errore = await risposta.json().catch(() => ({}));
+                    throw new Error(errore.detail || ('Errore ' + risposta.status));
+                }
+                dati = await risposta.json();
+            } catch (e) {
+                bottone.disabled = false;
+                bottone.textContent = '📲 Paga con Satispay';
+                showFormError('⚠️ Pagamento online non disponibile al momento (' + e.message + '). Puoi comunque confermare l\'ordine con pagamento alla consegna.');
+                return;
+            }
+
+            bottone.style.display = 'none';
+            const stato = document.getElementById('statoPagamentoSatispay');
+            stato.style.display = 'block';
+            stato.textContent = '📲 Apri l\'app Satispay sul telefono per completare il pagamento...';
+
+            const satispay = SatispayWebButton.configure({
+                paymentId: dati.satispay_payment_id,
+                completed: function () {
+                    stato.textContent = '⏳ Verifica il pagamento in corso...';
+                    attendiConfermaSatispay(dati.checkout_id, nome, telefono, indirizzo);
+                },
+            });
+            satispay.open();
+        }
+
+        function attendiConfermaSatispay(checkoutId, nome, telefono, indirizzo) {
+            const stato = document.getElementById('statoPagamentoSatispay');
+            const intervallo = setInterval(async () => {
+                let statoAttuale;
+                try {
+                    const r = await fetch('/api/checkout/stato/' + checkoutId);
+                    if (!r.ok) return;
+                    ({ stato: statoAttuale } = await r.json());
+                } catch (e) {
+                    return;
+                }
+
+                if (statoAttuale === 'pagato') {
+                    clearInterval(intervallo);
+                    const carrelloAttuale = JSON.parse(localStorage.getItem('carrello')) || {};
+                    const { items, subtotale, maggiorazione, totale } = computeTotals(carrelloAttuale);
+                    localStorage.setItem('ultimoOrdine', JSON.stringify({
+                        data: Date.now(), cliente: { nome, telefono, indirizzo }, modalita,
+                        items, subtotale, maggiorazione, totale, pagatoConSatispay: true
+                    }));
+                    localStorage.removeItem('carrello');
+                    localStorage.removeItem('carrelloAssistente');
+                    justConfirmed = true;
+                    stato.style.display = 'none';
+                    loadOrder();
+                } else if (statoAttuale === 'fallito' || statoAttuale === 'scaduto') {
+                    clearInterval(intervallo);
+                    stato.textContent = '❌ Pagamento non riuscito. Riprova o scegli il pagamento alla consegna.';
+                    const bottone = document.getElementById('btnPagaSatispay');
+                    if (bottone) { bottone.style.display = 'inline-flex'; bottone.disabled = false; bottone.textContent = '📲 Paga con Satispay'; }
+                }
+            }, 2500);
+            setTimeout(() => clearInterval(intervallo), 180000);
+        }
+
+        // ===== PAGAMENTO ONLINE CON CARTA (Stripe), alternativa a Satispay =====
+        async function avviaPagamentoStripe() {
+            clearFormError();
+            const carrello = JSON.parse(localStorage.getItem('carrello')) || {};
+            const entries = Object.entries(carrello);
+            if (entries.length === 0) {
+                showFormError('\u26a0\ufe0f Il carrello \u00e8 vuoto.');
+                return;
+            }
+
+            const nome = document.getElementById('custNome').value.trim();
+            const telefono = document.getElementById('custTelefono').value.trim();
+            const indirizzo = document.getElementById('custIndirizzo').value.trim();
+
+            const campiMancanti = [];
+            if (!nome) { markFieldError('custNome'); campiMancanti.push('nome'); }
+            if (!telefono) { markFieldError('custTelefono'); campiMancanti.push('telefono'); }
+            if (campiMancanti.length > 0) {
+                const descr = campiMancanti.length === 2 ? 'i campi nome e telefono' : ('il campo ' + campiMancanti[0]);
+                showFormError('\u26a0\ufe0f Compila ' + descr + ' per continuare');
+                return;
+            }
+            if (modalita === 'consegna' && !indirizzo) {
+                markFieldError('custIndirizzo');
+                showFormError("\u26a0\ufe0f Inserisci l'indirizzo di consegna");
+                return;
+            }
+
+            // Salva i dati cliente PRIMA di lasciare il sito per Stripe, cosi'
+            // al ritorno (success_url) loadCustomerData() li ritrova gia' compilati.
+            saveCustomerData();
+
+            const righeCarrello = [];
+            entries.forEach(([num, data]) => {
+                if ((data.grande || 0) > 0) righeCarrello.push({ numero_menu: parseInt(num), formato: 'grande', quantita: data.grande });
+                if ((data.piccola || 0) > 0) righeCarrello.push({ numero_menu: parseInt(num), formato: 'piccola', quantita: data.piccola });
+            });
+
+            const bottone = document.getElementById('btnPagaStripe');
+            bottone.disabled = true;
+            bottone.textContent = 'Un momento...';
+
+            try {
+                const risposta = await fetch('/api/checkout/stripe/avvia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    signal: AbortSignal.timeout(10000),
+                    body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo } })
+                });
+                if (!risposta.ok) {
+                    const errore = await risposta.json().catch(() => ({}));
+                    throw new Error(errore.detail || ('Errore ' + risposta.status));
+                }
+                const dati = await risposta.json();
+                // Lascia il sito: pagina di pagamento sicura ospitata da Stripe.
+                window.location.href = dati.url;
+            } catch (e) {
+                bottone.disabled = false;
+                bottone.textContent = '\ud83d\udcb3 Paga con carta';
+                showFormError('\u26a0\ufe0f Pagamento online non disponibile al momento (' + e.message + "). Puoi comunque confermare l'ordine con pagamento alla consegna, oppure provare con Satispay.");
+            }
+        }
+
+        function pulisciParametriStripeNellUrl() {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('checkout_id');
+            url.searchParams.delete('pagamento');
+            window.history.replaceState({}, '', url.pathname);
+        }
+
+        function attendiConfermaStripe(checkoutId) {
+            const stato = document.getElementById('statoPagamentoSatispay');
+            if (!stato) return;
+            stato.style.display = 'block';
+            stato.textContent = '\u23f3 Verifica il pagamento in corso...';
+
+            const nome = document.getElementById('custNome').value.trim();
+            const telefono = document.getElementById('custTelefono').value.trim();
+            const indirizzo = document.getElementById('custIndirizzo').value.trim();
+
+            const intervallo = setInterval(async () => {
+                let statoAttuale;
+                try {
+                    const r = await fetch('/api/checkout/stato/' + checkoutId);
+                    if (!r.ok) return;
+                    ({ stato: statoAttuale } = await r.json());
+                } catch (e) {
+                    return;
+                }
+
+                if (statoAttuale === 'pagato') {
+                    clearInterval(intervallo);
+                    const carrelloAttuale = JSON.parse(localStorage.getItem('carrello')) || {};
+                    const { items, subtotale, maggiorazione, totale } = computeTotals(carrelloAttuale);
+                    localStorage.setItem('ultimoOrdine', JSON.stringify({
+                        data: Date.now(), cliente: { nome, telefono, indirizzo }, modalita,
+                        items, subtotale, maggiorazione, totale, pagatoConStripe: true
+                    }));
+                    localStorage.removeItem('carrello');
+                    localStorage.removeItem('carrelloAssistente');
+                    justConfirmed = true;
+                    stato.style.display = 'none';
+                    pulisciParametriStripeNellUrl();
+                    loadOrder();
+                } else if (statoAttuale === 'fallito' || statoAttuale === 'scaduto') {
+                    clearInterval(intervallo);
+                    stato.textContent = '\u274c Pagamento non riuscito. Riprova o scegli un altro metodo di pagamento.';
+                    pulisciParametriStripeNellUrl();
+                }
+            }, 2500);
+            setTimeout(() => {
+                clearInterval(intervallo);
+                if (stato.style.display !== 'none') {
+                    stato.textContent = "\u23f3 La verifica sta impiegando pi\u00f9 del previsto. Se hai gi\u00e0 pagato, il tuo ordine verr\u00e0 comunque registrato appena confermato: ricarica questa pagina tra qualche minuto per controllare.";
+                }
+            }, 60000);
+        }
+
+        // Al ritorno dalla pagina di pagamento Stripe (successo o annullo),
+        // riprende da dove il cliente aveva lasciato il sito.
+        function gestisciRitornoDaStripe() {
+            const params = new URLSearchParams(window.location.search);
+            const checkoutId = params.get('checkout_id');
+            const esito = params.get('pagamento');
+            if (!checkoutId || !esito) return;
+
+            if (esito === 'stripe_ok') {
+                attendiConfermaStripe(checkoutId);
+            } else if (esito === 'stripe_annullato') {
+                const stato = document.getElementById('statoPagamentoSatispay');
+                if (stato) {
+                    stato.style.display = 'block';
+                    stato.textContent = "\u2139\ufe0f Pagamento con carta annullato. Il carrello \u00e8 ancora qui: puoi riprovare o scegliere un altro metodo.";
+                }
+                pulisciParametriStripeNellUrl();
+            }
+        }
+
+        // Carica dati cliente e ordine all'avvio
+        loadCustomerData();
+        loadOrder();
+        gestisciRitornoDaStripe();
+    </script>
+<div id="clearConfirmOverlay" class="confirm-overlay">
+    <div class="confirm-box">
+        <button type="button" class="confirm-close" onclick="closeClearConfirm()" aria-label="Chiudi">&times;</button>
+        <p>Sei sicuro di voler svuotare il carrello?</p>
+        <div class="confirm-actions">
+            <button type="button" class="btn-danger" onclick="doClearCart()">Svuota</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
