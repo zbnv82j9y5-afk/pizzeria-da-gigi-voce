@@ -1,11 +1,9 @@
-import asyncio
 import json
 import logging
-import os
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, StreamingResponse
-from fastrtc import Stream, get_cloudflare_turn_credentials_async
+from fastrtc import Stream
 
 from ..config import settings
 
@@ -23,40 +21,16 @@ def set_stream(stream: Stream) -> None:
     _stream = stream
 
 
-async def _get_turn_credentials_con_retry(tentativi: int = 3):
-    """Chiede le credenziali TURN gratuite (Cloudflare via HF_TOKEN).
-
-    A volte il primo tentativo fallisce per un problema di rete/DNS
-    momentaneo del container appena riavviato: riproviamo un paio di
-    volte con una breve pausa prima di arrenderci."""
-    ultimo_errore = None
-    for tentativo in range(1, tentativi + 1):
-        try:
-            return await get_cloudflare_turn_credentials_async(ttl=600)
-        except Exception as e:
-            ultimo_errore = e
-            logger.warning(
-                f"Tentativo {tentativo}/{tentativi} di ottenere le credenziali TURN fallito: {e}"
-            )
-            if tentativo < tentativi:
-                await asyncio.sleep(1.5 * tentativo)
-    logger.warning(f"Credenziali TURN non ottenute dopo {tentativi} tentativi, si prosegue senza: {ultimo_errore}")
-    return None
-
-
 @router.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     """Serve the main HTML page.
 
-    Su una rete "normale" (casa/telefono) la connessione WebRTC spesso
-    riesce anche senza server TURN, ma su reti piu' restrittive (aziendali,
-    alcune reti mobili) puo' fallire senza. Se e' impostata la variabile
-    d'ambiente HF_TOKEN (gratuita, vedi GIGIAI-DEPLOY.md), chiediamo le
-    credenziali TURN gratuite di Cloudflare tramite FastRTC — senza,
-    l'app funziona comunque ma potrebbe non collegarsi da certe reti."""
-    rtc_config = None
-    if os.environ.get("HF_TOKEN"):
-        rtc_config = await _get_turn_credentials_con_retry()
+    Le credenziali del server-ponte (TURN) vengono richieste una sola volta
+    all'avvio del server (vedi src/core/stream.py) e riutilizzate qui per il
+    client — cosi' il browser e il server usano esattamente la stessa
+    configurazione, ed evitiamo di richiederle di nuovo (e rischiare un
+    errore di rete) ad ogni apertura della pagina."""
+    rtc_config = _stream.rtc_configuration if _stream is not None else None
     html_path = settings.static_dir / "index.html"
     html_content = html_path.read_text()
     html_content = html_content.replace("__RTC_CONFIGURATION__", json.dumps(rtc_config))
