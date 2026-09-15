@@ -11,7 +11,7 @@ load_dotenv()
 class Settings:
     # OpenAI
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_realtime_model: str = os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-mini-2025-10-06")
+    openai_realtime_model: str = os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2.1-mini")
     openai_transcription_model: str = os.getenv("OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
 
     # Audio
