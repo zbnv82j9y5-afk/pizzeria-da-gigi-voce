@@ -43,6 +43,9 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
                 }
                 await conn.session.update(session=session_config)
                 self.connection = conn
+                # Fa parlare GigiAI per prima: genera subito un saluto di
+                # benvenuto, senza aspettare che il cliente parli per primo.
+                await conn.response.create()
                 await self._handle_events()
         except Exception as e:
             logger.error(f"OpenAI Realtime error: {e}")

@@ -11,36 +11,48 @@
             background-color: #0a0a0a;
             color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             height: 100vh;
+            height: 100dvh;
             box-sizing: border-box;
+            overflow: hidden;
         }
 
         .container {
             max-width: 800px;
             margin: 0 auto;
-            height: calc(100% - 100px);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .chat-container {
-            border: 1px solid #333;
-            padding: 20px;
-            height: 90%;
+            height: 100vh;
+            height: 100dvh;
             box-sizing: border-box;
+            padding: 16px 20px;
             display: flex;
             flex-direction: column;
         }
 
+        .logo {
+            text-align: center;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+
+        .chat-container {
+            border: 1px solid #333;
+            padding: 12px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: 130px;
+        }
+
         .chat-messages {
-            flex-grow: 1;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
-            margin-bottom: 20px;
-            padding: 10px;
+            margin-bottom: 10px;
+            padding: 8px;
+            font-size: 13px;
         }
 
         .message {
@@ -69,7 +81,8 @@
 
         .controls {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 10px;
+            flex-shrink: 0;
         }
 
         button {
@@ -184,12 +197,13 @@
 
         .voice-orb {
             position: relative;
-            width: 220px;
-            height: 220px;
-            margin: 10px auto 30px;
+            width: 190px;
+            height: 190px;
+            margin: 4px auto 12px;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
         .glow-disc {
@@ -204,15 +218,15 @@
         }
 
         .glow-disc--outer {
-            width: 220px;
-            height: 220px;
+            width: 190px;
+            height: 190px;
             background: conic-gradient(from 0deg, #ff6b35, #ffd23f, #f72585, #7209b7, #ff6b35);
             animation: orbSpinCW 7s linear infinite;
         }
 
         .glow-disc--inner {
-            width: 150px;
-            height: 150px;
+            width: 128px;
+            height: 128px;
             background: conic-gradient(from 90deg, #f72585, #4361ee, #ffd23f, #f72585);
             animation: orbSpinCCW 5s linear infinite;
         }
@@ -238,15 +252,15 @@
         .orb-center {
             position: relative;
             z-index: 2;
-            width: 92px;
-            height: 92px;
+            width: 78px;
+            height: 78px;
             border-radius: 50%;
             background: #111111;
             border: 1px solid #333;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 38px;
+            font-size: 32px;
         }
 
         .orb-text-ring {
@@ -281,10 +295,11 @@
             overflow: hidden;
             width: 100%;
             max-width: 800px;
-            margin: 0 auto 30px;
+            margin: 0 auto 12px;
             border-top: 1px solid #333;
             border-bottom: 1px solid #333;
-            padding: 10px 0;
+            padding: 8px 0;
+            flex-shrink: 0;
         }
 
         .pizza-ticker-track {
@@ -356,7 +371,7 @@
             const text = phrase.repeat(3);
             const chars = text.split('');
             const angleStep = 360 / chars.length;
-            const radius = 108;
+            const radius = 92;
             chars.forEach((char, i) => {
                 const span = document.createElement('span');
                 span.textContent = char;
