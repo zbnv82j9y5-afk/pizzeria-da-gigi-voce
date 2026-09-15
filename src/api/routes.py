@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -22,6 +23,27 @@ def set_stream(stream: Stream) -> None:
     _stream = stream
 
 
+async def _get_turn_credentials_con_retry(tentativi: int = 3):
+    """Chiede le credenziali TURN gratuite (Cloudflare via HF_TOKEN).
+
+    A volte il primo tentativo fallisce per un problema di rete/DNS
+    momentaneo del container appena riavviato: riproviamo un paio di
+    volte con una breve pausa prima di arrenderci."""
+    ultimo_errore = None
+    for tentativo in range(1, tentativi + 1):
+        try:
+            return await get_cloudflare_turn_credentials_async(ttl=600)
+        except Exception as e:
+            ultimo_errore = e
+            logger.warning(
+                f"Tentativo {tentativo}/{tentativi} di ottenere le credenziali TURN fallito: {e}"
+            )
+            if tentativo < tentativi:
+                await asyncio.sleep(1.5 * tentativo)
+    logger.warning(f"Credenziali TURN non ottenute dopo {tentativi} tentativi, si prosegue senza: {ultimo_errore}")
+    return None
+
+
 @router.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     """Serve the main HTML page.
@@ -34,10 +56,7 @@ async def index() -> HTMLResponse:
     l'app funziona comunque ma potrebbe non collegarsi da certe reti."""
     rtc_config = None
     if os.environ.get("HF_TOKEN"):
-        try:
-            rtc_config = await get_cloudflare_turn_credentials_async(ttl=600)
-        except Exception as e:
-            logger.warning(f"Impossibile ottenere le credenziali TURN, si prosegue senza: {e}")
+        rtc_config = await _get_turn_credentials_con_retry()
     html_path = settings.static_dir / "index.html"
     html_content = html_path.read_text()
     html_content = html_content.replace("__RTC_CONFIGURATION__", json.dumps(rtc_config))
