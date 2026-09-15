@@ -181,6 +181,129 @@
             background-color: #ffd700;
             color: black;
         }
+
+        .voice-orb {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 10px auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glow-disc {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            border-radius: 50%;
+            filter: blur(20px);
+            opacity: 0.28;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .glow-disc--outer {
+            width: 220px;
+            height: 220px;
+            background: conic-gradient(from 0deg, #ff6b35, #ffd23f, #f72585, #7209b7, #ff6b35);
+            animation: orbSpinCW 7s linear infinite;
+        }
+
+        .glow-disc--inner {
+            width: 150px;
+            height: 150px;
+            background: conic-gradient(from 90deg, #f72585, #4361ee, #ffd23f, #f72585);
+            animation: orbSpinCCW 5s linear infinite;
+        }
+
+        .voice-orb.is-connecting .glow-disc {
+            opacity: 0.45;
+        }
+
+        .voice-orb.is-active .glow-disc {
+            opacity: calc(0.45 + 0.5 * var(--audio-level, 0));
+        }
+
+        @keyframes orbSpinCW {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to   { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        @keyframes orbSpinCCW {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to   { transform: translate(-50%, -50%) rotate(-360deg); }
+        }
+
+        .orb-center {
+            position: relative;
+            z-index: 2;
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            background: #111111;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+        }
+
+        .orb-text-ring {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 0;
+            height: 0;
+            animation: orbTextSpin 16s linear infinite;
+        }
+
+        .orb-text-ring span {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #ffffff;
+            opacity: 0.7;
+            transform-origin: 0 0;
+            white-space: pre;
+        }
+
+        @keyframes orbTextSpin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        .pizza-ticker {
+            overflow: hidden;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 10px 0;
+        }
+
+        .pizza-ticker-track {
+            display: inline-flex;
+            white-space: nowrap;
+            animation: pizzaTickerScroll 40s linear infinite;
+        }
+
+        .pizza-ticker-track span {
+            margin: 0 18px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            color: #aaaaaa;
+        }
+
+        @keyframes pizzaTickerScroll {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+        }
     </style>
 </head>
 
@@ -189,6 +312,15 @@
     <div class="container">
         <div class="logo">
             <h1>🍕 GigiAI</h1>
+        </div>
+        <div class="voice-orb" id="voice-orb">
+            <div class="glow-disc glow-disc--outer"></div>
+            <div class="glow-disc glow-disc--inner"></div>
+            <div class="orb-text-ring" id="orb-text-ring"></div>
+            <div class="orb-center">🍕</div>
+        </div>
+        <div class="pizza-ticker" aria-hidden="true">
+            <div class="pizza-ticker-track" id="pizza-ticker-track"></div>
         </div>
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages"></div>
@@ -206,6 +338,54 @@
         const audioOutput = document.getElementById('audio-output');
         const startButton = document.getElementById('start-button');
         const chatMessages = document.getElementById('chat-messages');
+
+        const PIZZA_MENU_NAMES = [
+            'Marinara', 'Margherita', 'Romana', 'Toscana', 'Completa', 'Imperiale',
+            'Cardinale', 'Veneziana', 'Wurstel', 'Canadese', 'Diavola', 'Salsiccia',
+            'Sarda', 'Boscanola', 'Arrabbiata', 'Quattro Stagioni', 'Capricciosa',
+            'Tucano', 'Calzone', 'Calzone Farcito', 'Gorgonzola', 'Quattro Formaggi',
+            'Pesto', 'Sassarese', 'Greca', 'Ortolana', 'Antunna', 'Porcini',
+            'Tirolese', 'Patatosa', 'Furia', 'Bresaola', 'San Daniele', 'Primavera',
+            'Logudoresse', 'Salmone', 'Catalana', 'Carbonara', 'Mare e Monti', 'Campagnola'
+        ];
+
+        function buildTextRing() {
+            const ring = document.getElementById('orb-text-ring');
+            if (!ring) return;
+            const phrase = 'DILLO A GIGIAI  \u2022  ';
+            const text = phrase.repeat(3);
+            const chars = text.split('');
+            const angleStep = 360 / chars.length;
+            const radius = 108;
+            chars.forEach((char, i) => {
+                const span = document.createElement('span');
+                span.textContent = char;
+                const angle = i * angleStep;
+                span.style.transform = `rotate(${angle}deg) translate(${radius}px) rotate(90deg)`;
+                ring.appendChild(span);
+            });
+        }
+
+        function renderPizzaTicker() {
+            const track = document.getElementById('pizza-ticker-track');
+            if (!track) return;
+            const names = PIZZA_MENU_NAMES.concat(PIZZA_MENU_NAMES);
+            track.innerHTML = names.map(name => `<span>\ud83c\udf55 ${name}</span>`).join('');
+        }
+
+        function updateOrbState() {
+            const orb = document.getElementById('voice-orb');
+            if (!orb) return;
+            orb.classList.remove('is-connecting', 'is-active');
+            if (peerConnection && peerConnection.connectionState === 'connected') {
+                orb.classList.add('is-active');
+            } else if (peerConnection && (peerConnection.connectionState === 'connecting' || peerConnection.connectionState === 'new')) {
+                orb.classList.add('is-connecting');
+            }
+        }
+
+        buildTextRing();
+        renderPizzaTicker();
 
         let audioLevel = 0;
         let animationFrame;
@@ -229,6 +409,7 @@
             </svg>`;
 
         function updateButtonState() {
+            updateOrbState();
             const button = document.getElementById('start-button');
             button.innerHTML = '';
 
@@ -296,6 +477,11 @@
                 const pulseCircle = document.querySelector('.pulse-circle');
                 if (pulseCircle) {
                     pulseCircle.style.setProperty('--audio-level', 1 + audioLevel);
+                }
+
+                const orb = document.getElementById('voice-orb');
+                if (orb) {
+                    orb.style.setProperty('--audio-level', audioLevel);
                 }
 
                 animationFrame = requestAnimationFrame(updateAudioLevel);
