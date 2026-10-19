@@ -23,24 +23,36 @@ TESTO_SALUTO = (
 )
 
 _audio_mp3: bytes | None = None
+_audio_pcm: bytes | None = None  # PCM 16 bit, 24 kHz, mono (come la Realtime API)
 
 
 def genera_saluto() -> None:
-    global _audio_mp3
+    """Genera il saluto in PCM (inviato dentro la telefonata WebRTC: il
+    telefono non lo blocca) e in mp3 (per eventuali usi nella pagina)."""
+    global _audio_mp3, _audio_pcm
+    client = openai.OpenAI(timeout=20)
+    parametri = dict(
+        model="gpt-4o-mini-tts",
+        voice=DEFAULT_VOICE,
+        input=TESTO_SALUTO,
+        instructions="Voce femminile italiana, allegra, cordiale e naturale, ritmo vivace.",
+    )
     try:
-        risposta = openai.OpenAI(timeout=20).audio.speech.create(
-            model="gpt-4o-mini-tts",
-            voice=DEFAULT_VOICE,
-            input=TESTO_SALUTO,
-            instructions="Voce femminile italiana, allegra, cordiale e naturale, ritmo vivace.",
-            response_format="mp3",
-        )
-        _audio_mp3 = risposta.content
-        logger.info(f"Saluto registrato pronto ({len(_audio_mp3)} byte)")
+        pcm = client.audio.speech.create(response_format="pcm", **parametri).content
+        _audio_pcm = pcm[: len(pcm) - (len(pcm) % 2)]
+        logger.info(f"Saluto registrato pronto ({len(_audio_pcm) / 48000:.1f} s)")
     except Exception as e:  # noqa: BLE001 - qualunque errore: si usa il saluto dal vivo
-        _audio_mp3 = None
+        _audio_pcm = None
         logger.warning(f"Saluto registrato non disponibile, uso quello dal vivo: {e}")
+    try:
+        _audio_mp3 = client.audio.speech.create(response_format="mp3", **parametri).content
+    except Exception:  # noqa: BLE001
+        _audio_mp3 = None
 
 
 def audio_saluto() -> bytes | None:
     return _audio_mp3
+
+
+def audio_saluto_pcm() -> bytes | None:
+    return _audio_pcm

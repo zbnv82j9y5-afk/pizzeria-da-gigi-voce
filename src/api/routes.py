@@ -72,6 +72,18 @@ async def saluto(dati: dict) -> dict:
     return {"ok": True}
 
 
+@router.post("/ripristina")
+async def ripristina(dati: dict) -> dict:
+    """Dopo una caduta di linea la pagina si ricollega e manda l'ordine gia' fatto."""
+    webrtc_id = str(dati.get("webrtc_id", ""))
+    handler = _stream.handlers.get(webrtc_id) if _stream is not None else None
+    if handler is None or not hasattr(handler, "richiedi_ripristino"):
+        return {"ok": False}
+    righe = dati.get("righe") if isinstance(dati.get("righe"), list) else []
+    handler.richiedi_ripristino(righe[:30])
+    return {"ok": True}
+
+
 @router.get("/health")
 async def health() -> dict:
     """Health check endpoint."""

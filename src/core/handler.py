@@ -10,7 +10,7 @@ from fastrtc import AdditionalOutputs, AsyncStreamHandler, wait_for_item
 
 from ..config import settings, get_session_config
 from .menu_db import carica_menu, euro, menu_come_testo
-from .saluto_audio import TESTO_SALUTO
+from .saluto_audio import TESTO_SALUTO, audio_saluto_pcm
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,9 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
         # Audio del cliente arrivato prima che OpenAI fosse collegato
         # (es. parla subito dopo il saluto registrato): lo teniamo da parte.
         self._audio_in_attesa: list[str] = []
+        # Ricollegamento dopo una caduta di linea: ordine da ripristinare.
+        self._ripristino: list[dict] | None = None
+        self._in_sospeso: list = []  # azioni chieste prima che start_up partisse
 
     def copy(self) -> "OpenAIRealtimeHandler":
         """Create a copy of this handler for new connections."""
@@ -46,6 +49,10 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
         try:
             self._loop = asyncio.get_running_loop()
             t0 = time.monotonic()
+            asyncio.create_task(self._gestisci_saluto())
+            for azione in self._in_sospeso:
+                asyncio.ensure_future(azione())
+            self._in_sospeso.clear()
             # Menu e collegamento a OpenAI in parallelo: si parte prima.
             menu_task = asyncio.create_task(carica_menu())
             client = openai.AsyncOpenAI()
@@ -60,22 +67,29 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
                         sample_rate=settings.sample_rate,
                     )
                 )
-                # Il saluto registrato fa gia' parte della conversazione:
-                # Gavina sa di essersi presentata e non lo ripete.
-                await conn.conversation.item.create(item={
-                    "type": "message", "role": "assistant",
-                    "content": [{"type": "output_text", "text": TESTO_SALUTO}],
-                })
+                # Il saluto fa gia' parte della conversazione: Gavina sa di
+                # essersi presentata e non lo ripete.
+                if self._ripristino is None:
+                    await conn.conversation.item.create(item={
+                        "type": "message", "role": "assistant",
+                        "content": [{"type": "output_text", "text": TESTO_SALUTO}],
+                    })
                 for pezzo in self._audio_in_attesa:
                     await conn.input_audio_buffer.append(audio=pezzo)
                 self._audio_in_attesa.clear()
                 self.connection = conn
                 logger.info(f"Sessione pronta a {time.monotonic() - t0:.1f}s")
-                asyncio.create_task(self._saluta_quando_pronto())
                 await self._handle_events()
         except Exception as e:
             logger.error(f"OpenAI Realtime error: {e}")
             raise
+
+    def _programma(self, azione) -> None:
+        """Esegue la coroutine azione() nel loop della conversazione."""
+        if self._loop is not None:
+            self._loop.call_soon_threadsafe(lambda: asyncio.ensure_future(azione()))
+        else:
+            self._in_sospeso.append(azione)
 
     def richiedi_saluto(self) -> None:
         """Chiamato dalla route /saluto quando l'audio del cliente e' attivo."""
@@ -84,18 +98,69 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
         else:
             self._evento_saluto.set()
 
-    async def _saluta_quando_pronto(self) -> None:
+    def richiedi_ripristino(self, righe: list[dict]) -> None:
+        """Chiamato dalla route /ripristina dopo una caduta di linea."""
+        self._ripristino = list(righe or [])
+        self._gia_risposto = True  # niente saluto: si riprende il discorso
+        self.richiedi_saluto()
+        self._programma(self._esegui_ripristino)
+
+    async def _attendi_connessione(self, secondi: float = 20) -> bool:
+        fine = time.monotonic() + secondi
+        while self.connection is None and time.monotonic() < fine:
+            await asyncio.sleep(0.1)
+        return self.connection is not None
+
+    async def _gestisci_saluto(self) -> None:
         try:
             await asyncio.wait_for(self._evento_saluto.wait(), timeout=60)
         except asyncio.TimeoutError:
             return  # audio mai attivato: il saluto andrebbe perso
-        if not self._gia_risposto and self.connection is not None:
-            # Saluto dal vivo: usato solo se il saluto registrato non e'
-            # stato riprodotto sul telefono del cliente.
-            self._gia_risposto = True
+        if self._gia_risposto or self._ripristino is not None:
+            return
+        self._gia_risposto = True
+        pcm = audio_saluto_pcm()
+        if pcm:
+            # Saluto registrato inviato subito nella linea, senza aspettare
+            # che OpenAI sia collegato. Pezzi da 100 ms.
+            passo = 4800
+            for i in range(0, len(pcm), passo):
+                await self.output_queue.put(
+                    (self.output_sample_rate, np.frombuffer(pcm[i:i + passo], dtype=np.int16).reshape(1, -1))
+                )
+            logger.info("Saluto registrato inviato")
+            return
+        # Riserva: saluto dal vivo appena OpenAI e' collegato.
+        if await self._attendi_connessione():
             await self.connection.response.create(response={
                 "instructions": f"Saluta ora il cliente dicendo: \"{TESTO_SALUTO}\" Poi aspetta che parli."
             })
+
+    async def _esegui_ripristino(self) -> None:
+        if not await self._attendi_connessione():
+            return
+        righe = self._ripristino or []
+        articoli = [
+            {"numero_menu": r.get("numero_menu"), "formato": r.get("formato"), "quantita": r.get("quantita")}
+            for r in righe
+        ]
+        if articoli:
+            riepilogo = await self.aggiorna_ordine(articoli)
+            nota = (
+                "La linea con il cliente e' caduta ed e' stata appena ripristinata. "
+                f"Ordine gia' registrato: {', '.join(riepilogo['ordine'])}. Totale {riepilogo['totale']}."
+            )
+            istruzioni = ("Di' in una frase breve che la linea era caduta e che hai ancora il suo ordine, "
+                          "riepilogalo in poche parole e chiedi se vuole aggiungere altro o confermare.")
+        else:
+            nota = "La linea con il cliente e' caduta ed e' stata appena ripristinata. Nessuna pizza era ancora registrata."
+            istruzioni = "Di' in una frase breve che la linea era caduta e chiedi gentilmente cosa desidera ordinare."
+        logger.info(f"Ripristino dopo caduta di linea: {len(articoli)} righe")
+        await self.connection.conversation.item.create(item={
+            "type": "message", "role": "system",
+            "content": [{"type": "input_text", "text": nota}],
+        })
+        await self.connection.response.create(response={"instructions": istruzioni})
 
     async def _handle_events(self) -> None:
         """Process events from OpenAI Realtime API."""

@@ -373,6 +373,7 @@
             box-shadow: 0 6px 24px rgba(0,0,0,0.5); cursor: pointer;
         }
         .audio-unlock-overlay[hidden] { display: none; }
+        .avviso-linea { background: #f3f3f3; top: 12px; z-index: 2001; }
         .sottotitolo { text-align: center; color: #d9d9d9; font-size: 15px; margin: -4px 0 8px; }
 
         /* --- Avvio con un tocco (sblocca microfono e audio su iPhone) --- */
@@ -409,6 +410,7 @@
 
 <body>
     <div id="error-toast" class="toast"></div>
+    <div id="avviso-linea" class="audio-unlock-overlay avviso-linea" hidden></div>
     <div id="audio-unlock-overlay" class="audio-unlock-overlay" hidden>
         🔊 Tocca qui per ascoltare Gavina
     </div>
@@ -571,7 +573,12 @@
         }
 
         document.getElementById('mute-toggle').addEventListener('click', toggleMute);
-        document.getElementById('end-call-btn').addEventListener('click', () => stop());
+        document.getElementById('end-call-btn').addEventListener('click', () => {
+            chiusoDallUtente = true;
+            clearTimeout(timerDisconnessione);
+            mostraAvvisoLinea(null);
+            stop();
+        });
 
         function setupAudioVisualization(stream) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -636,7 +643,6 @@
                 });
 
                 setupAudioVisualization(stream);
-                riproduciSalutoRegistrato();
 
                 stream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, stream);
@@ -675,12 +681,23 @@
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
 
-                peerConnection.addEventListener('connectionstatechange', () => {
-                    console.log('connectionstatechange', peerConnection.connectionState);
-                    if (peerConnection.connectionState === 'connected') {
+                const pc = peerConnection;
+                pc.addEventListener('connectionstatechange', () => {
+                    if (pc !== peerConnection) return; // connessione vecchia
+                    console.log('connectionstatechange', pc.connectionState);
+                    if (pc.connectionState === 'connected') {
                         clearTimeout(timeoutId);
+                        clearTimeout(timerDisconnessione);
+                        tentativiRicollegamento = 0;
+                        mostraAvvisoLinea(null);
                         const toast = document.getElementById('error-toast');
                         toast.style.display = 'none';
+                    } else if (pc.connectionState === 'disconnected') {
+                        // a volte si riprende da sola: aspettiamo qualche secondo
+                        clearTimeout(timerDisconnessione);
+                        timerDisconnessione = setTimeout(ricollega, 4000);
+                    } else if (pc.connectionState === 'failed') {
+                        ricollega();
                     }
                     updateStatusUI();
                 });
@@ -714,7 +731,8 @@
 
                 await peerConnection.setRemoteDescription(serverResponse);
 
-                const eventSource = new EventSource('/outputs?webrtc_id=' + webrtc_id);
+                if (eventSource) eventSource.close();
+                eventSource = new EventSource('/outputs?webrtc_id=' + webrtc_id);
                 eventSource.addEventListener("output", (event) => {
                     const eventJson = JSON.parse(event.data);
                     if (eventJson.type === 'ordine') {
@@ -728,6 +746,12 @@
             } catch (err) {
                 clearTimeout(timeoutId);
                 console.error('Error setting up WebRTC:', err);
+                if (inRipristino) {
+                    stop();
+                    ricollegamentoInCorso = false;
+                    ricollega();
+                    return;
+                }
                 showError(`Connessione fallita: ${err.message || err}`);
                 stop();
             }
@@ -751,6 +775,7 @@
                 riga.append(nome, prezzo);
                 contenitore.appendChild(riga);
             });
+            ultimoOrdine = (dati.righe || []).map(r => ({ numero_menu: r.numero_menu, formato: r.formato, quantita: r.quantita }));
             document.getElementById('ordine-totale').textContent = formattaEuro(dati.totale);
             box.hidden = !(dati.righe && dati.righe.length);
             // Se l'ordine cambia dopo la conferma, il pulsante va richiesto di nuovo.
@@ -808,32 +833,25 @@
         // e' davvero attivo, cosi' su iPhone non va perso.
         let salutoRichiesto = false;
         let audioPronto = false;
-        // 'in_corso' | 'ok' | 'fallito': se il saluto registrato non parte,
-        // si chiede a Gavina di salutare dal vivo.
-        let statoSalutoRegistrato = 'in_corso';
-
-        function riproduciSalutoRegistrato() {
-            const saluto = new Audio('/saluto.mp3');
-            saluto.addEventListener('error', () => {
-                statoSalutoRegistrato = 'fallito';
-                segnalaAudioPronto();
-            });
-            saluto.play().then(() => {
-                statoSalutoRegistrato = 'ok';
-            }).catch(() => {
-                statoSalutoRegistrato = 'fallito';
-                segnalaAudioPronto();
-            });
-        }
+        // Ricollegamento automatico se la linea cade (schermo bloccato,
+        // cambio di rete, app in secondo piano...)
+        let ultimoOrdine = [];          // righe mostrate nel riquadro "Il tuo ordine"
+        let inRipristino = false;       // true dopo una caduta: si riprende l'ordine
+        let chiusoDallUtente = false;
+        let tentativiRicollegamento = 0;
+        let ricollegamentoInCorso = false;
+        let timerDisconnessione = null;
+        let eventSource = null;
 
         function segnalaAudioPronto() {
-            if (!audioPronto || statoSalutoRegistrato !== 'fallito') return;
-            if (salutoRichiesto || !webrtc_id) return;
+            if (!audioPronto || salutoRichiesto || !webrtc_id) return;
             salutoRichiesto = true;
-            fetch('/saluto', {
+            const percorso = inRipristino ? '/ripristina' : '/saluto';
+            const corpo = inRipristino ? { webrtc_id: webrtc_id, righe: ultimoOrdine } : { webrtc_id: webrtc_id };
+            fetch(percorso, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ webrtc_id: webrtc_id })
+                body: JSON.stringify(corpo)
             }).catch(() => {});
         }
 
@@ -862,6 +880,46 @@
                 audioPronto = true;
                 segnalaAudioPronto();
             }).catch(() => {});
+        });
+
+        function mostraAvvisoLinea(testo, cliccabile) {
+            const el = document.getElementById('avviso-linea');
+            if (!testo) { el.hidden = true; return; }
+            el.textContent = testo;
+            el.hidden = false;
+            el.onclick = cliccabile ? () => {
+                tentativiRicollegamento = 0;
+                ricollega();
+            } : null;
+        }
+
+        function ricollega() {
+            clearTimeout(timerDisconnessione);
+            if (chiusoDallUtente || ricollegamentoInCorso) return;
+            if (peerConnection && peerConnection.connectionState === 'connected') return;
+            if (tentativiRicollegamento >= 3) {
+                mostraAvvisoLinea('📶 Collegamento perso. Tocca qui per riprovare', true);
+                return;
+            }
+            tentativiRicollegamento++;
+            ricollegamentoInCorso = true;
+            mostraAvvisoLinea('📶 Collegamento perso, mi ricollego…');
+            if (eventSource) { eventSource.close(); eventSource = null; }
+            stop();
+            setTimeout(() => {
+                ricollegamentoInCorso = false;
+                inRipristino = true;
+                salutoRichiesto = false;
+                audioPronto = false;
+                setupWebRTC();
+            }, 800);
+        }
+
+        // Tornando sulla pagina (dopo schermo bloccato o altra app) controlla la linea.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible' || chiusoDallUtente) return;
+            const stato = peerConnection ? peerConnection.connectionState : 'closed';
+            if (stato === 'failed' || stato === 'closed' || stato === 'disconnected') ricollega();
         });
 
         // Si parte subito, appena si entra nella pagina.
