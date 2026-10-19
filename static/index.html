@@ -43,7 +43,7 @@
             flex-direction: column;
             flex: 1 1 auto;
             min-height: 0;
-            max-height: 130px;
+            max-height: 170px;
         }
 
         .chat-messages {
@@ -365,22 +365,15 @@
             color: #ffffff;
         }
 
+        /* Striscia in alto (NON copre la pagina) se il telefono blocca l'audio */
         .audio-unlock-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px;
-            box-sizing: border-box;
-            z-index: 2000;
-            cursor: pointer;
-            font-size: 18px;
-            letter-spacing: 0.5px;
+            position: fixed; top: 12px; left: 16px; right: 16px; z-index: 2000;
+            background: #e8892b; color: #111; border-radius: 12px;
+            padding: 14px 16px; text-align: center; font-size: 17px; font-weight: 600;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.5); cursor: pointer;
         }
+        .audio-unlock-overlay[hidden] { display: none; }
+        .sottotitolo { text-align: center; color: #d9d9d9; font-size: 15px; margin: -4px 0 8px; }
 
         /* --- Avvio con un tocco (sblocca microfono e audio su iPhone) --- */
         .start-overlay {
@@ -417,17 +410,14 @@
 <body>
     <div id="error-toast" class="toast"></div>
     <div id="audio-unlock-overlay" class="audio-unlock-overlay" hidden>
-        Tocca lo schermo per attivare l'audio di GigiAI
-    </div>
-    <div id="start-overlay" class="start-overlay">
-        <button class="start-btn" id="start-btn">🍕 Ordina a voce con GigiAI</button>
-        <div class="start-note">Il telefono ti chiederà il permesso di usare il microfono: tocca "Consenti" per parlare con GigiAI.</div>
+        🔊 Tocca qui per ascoltare Gavina
     </div>
     <div class="container">
         <a class="back-link" href="https://pizzeria-da-gigi-sito.onrender.com/">&larr; Torna al menu</a>
         <div class="logo">
             <h1>🍕 GigiAI</h1>
         </div>
+        <div class="sottotitolo">Ti risponde Gavina, l'assistente vocale di Gigi</div>
         <div class="voice-orb" id="voice-orb">
             <div class="glow-disc glow-disc--outer"></div>
             <div class="glow-disc glow-disc--inner"></div>
@@ -654,10 +644,7 @@
                 peerConnection.addEventListener('track', (evt) => {
                     if (audioOutput.srcObject !== evt.streams[0]) {
                         audioOutput.srcObject = evt.streams[0];
-                        audioOutput.play().catch(() => {
-                            const overlay = document.getElementById('audio-unlock-overlay');
-                            overlay.hidden = false;
-                        });
+                        tentaAudio();
                     }
                 });
 
@@ -816,21 +803,46 @@
             audioLevel = 0;
         }
 
-        document.getElementById('audio-unlock-overlay').addEventListener('click', () => {
-            const overlay = document.getElementById('audio-unlock-overlay');
-            audioOutput.play().finally(() => {
-                overlay.hidden = true;
+        // Saluto di Gavina: il server lo fa partire solo quando qui l'audio
+        // e' davvero attivo, cosi' su iPhone non va perso.
+        let salutoRichiesto = false;
+        function segnalaAudioPronto() {
+            if (salutoRichiesto || !webrtc_id) return;
+            salutoRichiesto = true;
+            fetch('/saluto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ webrtc_id: webrtc_id })
+            }).catch(() => {});
+        }
+
+        function tentaAudio() {
+            const striscia = document.getElementById('audio-unlock-overlay');
+            let bloccato = false;
+            audioOutput.play().then(() => {
+                striscia.hidden = true;
+                segnalaAudioPronto();
+            }).catch(() => {
+                bloccato = true;
+                striscia.hidden = false;
             });
+            // Su alcuni browser play() resta "in attesa" finche' non arriva
+            // audio: se non e' stato rifiutato, l'audio e' consentito.
+            setTimeout(() => { if (!bloccato) segnalaAudioPronto(); }, 1000);
+        }
+
+        // Un tocco in qualunque punto sblocca l'audio se era bloccato.
+        document.addEventListener('click', () => {
+            const striscia = document.getElementById('audio-unlock-overlay');
+            if (striscia.hidden || !audioOutput.srcObject) return;
+            audioOutput.play().then(() => {
+                striscia.hidden = true;
+                segnalaAudioPronto();
+            }).catch(() => {});
         });
 
-        // Si parte con un tocco: su iPhone/Safari l'audio e il microfono si
-        // possono attivare solo dopo un gesto dell'utente. Cosi' il saluto di
-        // GigiAI non va perso e non serve la schermata "tocca per attivare".
-        document.getElementById('start-btn').addEventListener('click', () => {
-            document.getElementById('start-overlay').hidden = true;
-            audioOutput.play().catch(() => {});
-            setupWebRTC();
-        });
+        // Si parte subito, appena si entra nella pagina.
+        setupWebRTC();
     </script>
 </body>
 

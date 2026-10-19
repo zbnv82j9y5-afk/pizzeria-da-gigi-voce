@@ -51,6 +51,17 @@ async def outputs(webrtc_id: str) -> StreamingResponse:
     return StreamingResponse(output_stream(), media_type="text/event-stream")
 
 
+@router.post("/saluto")
+async def saluto(dati: dict) -> dict:
+    """Il browser avvisa che l'audio e' attivo: Gavina puo' salutare."""
+    webrtc_id = str(dati.get("webrtc_id", ""))
+    handler = _stream.handlers.get(webrtc_id) if _stream is not None else None
+    if handler is None or not hasattr(handler, "richiedi_saluto"):
+        return {"ok": False}
+    handler.richiedi_saluto()
+    return {"ok": True}
+
+
 @router.get("/health")
 async def health() -> dict:
     """Health check endpoint."""

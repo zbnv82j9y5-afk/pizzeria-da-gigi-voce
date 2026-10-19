@@ -26,6 +26,11 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
         self.output_queue: asyncio.Queue = asyncio.Queue()
         self.menu: list[dict] = []
         self.ordine: list[dict] = []  # righe valide dell'ordine corrente
+        # Saluto iniziale: parte quando il browser conferma che l'audio e'
+        # attivo (POST /saluto), altrimenti su iPhone andrebbe perso.
+        self._evento_saluto = asyncio.Event()
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._gia_risposto = False
 
     def copy(self) -> "OpenAIRealtimeHandler":
         """Create a copy of this handler for new connections."""
@@ -34,12 +39,14 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
     async def start_up(self) -> None:
         """Connect to OpenAI Realtime API and handle events."""
         try:
-            self.menu, da_db = await carica_menu()
-            logger.info(f"Menu caricato ({len(self.menu)} pizze, da database: {da_db})")
-
+            self._loop = asyncio.get_running_loop()
+            # Menu e collegamento a OpenAI in parallelo: si parte prima.
+            menu_task = asyncio.create_task(carica_menu())
             client = openai.AsyncOpenAI()
             async with client.realtime.connect(model=settings.openai_realtime_model) as conn:
                 logger.info("Connected to OpenAI Realtime API")
+                self.menu, da_db = await menu_task
+                logger.info(f"Menu caricato ({len(self.menu)} pizze, da database: {da_db})")
                 await conn.session.update(
                     session=get_session_config(
                         menu_testo=menu_come_testo(self.menu),
@@ -48,18 +55,37 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
                     )
                 )
                 self.connection = conn
-                # GigiAI saluta per prima e poi aspetta il cliente.
-                await conn.response.create()
+                asyncio.create_task(self._saluta_quando_pronto())
                 await self._handle_events()
         except Exception as e:
             logger.error(f"OpenAI Realtime error: {e}")
             raise
 
+    def richiedi_saluto(self) -> None:
+        """Chiamato dalla route /saluto quando l'audio del cliente e' attivo."""
+        if self._loop is not None:
+            self._loop.call_soon_threadsafe(self._evento_saluto.set)
+        else:
+            self._evento_saluto.set()
+
+    async def _saluta_quando_pronto(self) -> None:
+        try:
+            await asyncio.wait_for(self._evento_saluto.wait(), timeout=60)
+        except asyncio.TimeoutError:
+            return  # audio mai attivato: il saluto andrebbe perso
+        if not self._gia_risposto and self.connection is not None:
+            self._gia_risposto = True
+            await self.connection.response.create()
+
     async def _handle_events(self) -> None:
         """Process events from OpenAI Realtime API."""
         async for event in self.connection:
             if event.type == "input_audio_buffer.speech_started":
+                self._gia_risposto = True  # il cliente ha parlato per primo
                 self.clear_queue()
+
+            elif event.type == "response.created":
+                self._gia_risposto = True
 
             elif event.type == "conversation.item.input_audio_transcription.completed":
                 logger.info(f"Cliente: {event.transcript}")
