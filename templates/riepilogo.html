@@ -29,7 +29,10 @@
     var g = parseInt(dati[num].grande, 10) || 0, p = parseInt(dati[num].piccola, 10) || 0;
     if (/^\d+$/.test(num) && (g > 0 || p > 0)) carrello[num] = { grande: g, piccola: p };
   });
-  if (Object.keys(carrello).length) localStorage.setItem('carrello', JSON.stringify(carrello));
+  if (Object.keys(carrello).length) {
+    localStorage.setItem('carrello', JSON.stringify(carrello));
+    sessionStorage.setItem('dg_da_vocale', '1');
+  }
   history.replaceState(null, '', location.pathname);
 } catch (e) {} })();
 </script>
@@ -840,6 +843,12 @@
             if (!el) return;
             el.textContent = message;
             el.style.display = 'block';
+            // L'avviso sta in cima ai dati, i pulsanti di pagamento in fondo:
+            // senza questo sul telefono l'avviso non si vede e sembra che il
+            // pulsante non faccia nulla.
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const primoCampo = document.querySelector('.field-error');
+            if (primoCampo) setTimeout(() => primoCampo.focus(), 400);
         }
 
         function clearFormError() {
@@ -1248,5 +1257,26 @@
         </div>
     </div>
 </div>
+<script>
+/* Arrivo dall'ordine dettato a Gavina: porta il cliente ai suoi dati
+   (nome e telefono servono per qualunque pagamento). */
+window.addEventListener('load', function () { try {
+  if (!sessionStorage.getItem('dg_da_vocale')) return;
+  sessionStorage.removeItem('dg_da_vocale');
+  setTimeout(function () {
+    var sez = document.getElementById('customerSection');
+    if (!sez || sez.style.display === 'none') return;
+    var nome = document.getElementById('custNome'), tel = document.getElementById('custTelefono');
+    if (nome && tel && (!nome.value.trim() || !tel.value.trim())) {
+      sez.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var avviso = document.getElementById('formError');
+      if (avviso) {
+        avviso.textContent = '👋 Ecco il tuo ordine! Inserisci nome e telefono, poi scegli come pagare qui sotto.';
+        avviso.style.display = 'block';
+      }
+    }
+  }, 300);
+} catch (e) {} });
+</script>
 </body>
 </html>

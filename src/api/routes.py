@@ -2,7 +2,7 @@ import json
 import logging
 
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from fastrtc import Stream
 
 from ..config import settings
@@ -49,6 +49,16 @@ async def outputs(webrtc_id: str) -> StreamingResponse:
             yield f"event: output\ndata: {data}\n\n"
 
     return StreamingResponse(output_stream(), media_type="text/event-stream")
+
+
+@router.get("/saluto.mp3")
+async def saluto_mp3() -> Response:
+    from ..core.saluto_audio import audio_saluto
+    audio = audio_saluto()
+    if not audio:
+        return Response(status_code=404)
+    return Response(content=audio, media_type="audio/mpeg",
+                    headers={"Cache-Control": "public, max-age=3600"})
 
 
 @router.post("/saluto")

@@ -636,6 +636,7 @@
                 });
 
                 setupAudioVisualization(stream);
+                riproduciSalutoRegistrato();
 
                 stream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, stream);
@@ -806,7 +807,27 @@
         // Saluto di Gavina: il server lo fa partire solo quando qui l'audio
         // e' davvero attivo, cosi' su iPhone non va perso.
         let salutoRichiesto = false;
+        let audioPronto = false;
+        // 'in_corso' | 'ok' | 'fallito': se il saluto registrato non parte,
+        // si chiede a Gavina di salutare dal vivo.
+        let statoSalutoRegistrato = 'in_corso';
+
+        function riproduciSalutoRegistrato() {
+            const saluto = new Audio('/saluto.mp3');
+            saluto.addEventListener('error', () => {
+                statoSalutoRegistrato = 'fallito';
+                segnalaAudioPronto();
+            });
+            saluto.play().then(() => {
+                statoSalutoRegistrato = 'ok';
+            }).catch(() => {
+                statoSalutoRegistrato = 'fallito';
+                segnalaAudioPronto();
+            });
+        }
+
         function segnalaAudioPronto() {
+            if (!audioPronto || statoSalutoRegistrato !== 'fallito') return;
             if (salutoRichiesto || !webrtc_id) return;
             salutoRichiesto = true;
             fetch('/saluto', {
@@ -821,6 +842,7 @@
             let bloccato = false;
             audioOutput.play().then(() => {
                 striscia.hidden = true;
+                audioPronto = true;
                 segnalaAudioPronto();
             }).catch(() => {
                 bloccato = true;
@@ -828,7 +850,7 @@
             });
             // Su alcuni browser play() resta "in attesa" finche' non arriva
             // audio: se non e' stato rifiutato, l'audio e' consentito.
-            setTimeout(() => { if (!bloccato) segnalaAudioPronto(); }, 1000);
+            setTimeout(() => { if (!bloccato) { audioPronto = true; segnalaAudioPronto(); } }, 1000);
         }
 
         // Un tocco in qualunque punto sblocca l'audio se era bloccato.
@@ -837,6 +859,7 @@
             if (striscia.hidden || !audioOutput.srcObject) return;
             audioOutput.play().then(() => {
                 striscia.hidden = true;
+                audioPronto = true;
                 segnalaAudioPronto();
             }).catch(() => {});
         });

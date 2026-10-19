@@ -31,6 +31,10 @@ def main() -> None:
     """Main entry point."""
     mode = os.getenv("MODE", "").upper()
 
+    # Saluto registrato di Gavina (vedi src/core/saluto_audio.py)
+    from src.core.saluto_audio import genera_saluto
+    genera_saluto()
+
     # Create the stream (shared across modes)
     stream = create_stream()
 

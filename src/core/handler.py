@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 import logging
+import time
 
 import numpy as np
 import openai
@@ -9,6 +10,7 @@ from fastrtc import AdditionalOutputs, AsyncStreamHandler, wait_for_item
 
 from ..config import settings, get_session_config
 from .menu_db import carica_menu, euro, menu_come_testo
+from .saluto_audio import TESTO_SALUTO
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,9 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
         self._evento_saluto = asyncio.Event()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._gia_risposto = False
+        # Audio del cliente arrivato prima che OpenAI fosse collegato
+        # (es. parla subito dopo il saluto registrato): lo teniamo da parte.
+        self._audio_in_attesa: list[str] = []
 
     def copy(self) -> "OpenAIRealtimeHandler":
         """Create a copy of this handler for new connections."""
@@ -40,13 +45,14 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
         """Connect to OpenAI Realtime API and handle events."""
         try:
             self._loop = asyncio.get_running_loop()
+            t0 = time.monotonic()
             # Menu e collegamento a OpenAI in parallelo: si parte prima.
             menu_task = asyncio.create_task(carica_menu())
             client = openai.AsyncOpenAI()
             async with client.realtime.connect(model=settings.openai_realtime_model) as conn:
-                logger.info("Connected to OpenAI Realtime API")
+                logger.info(f"Connected to OpenAI Realtime API in {time.monotonic() - t0:.1f}s")
                 self.menu, da_db = await menu_task
-                logger.info(f"Menu caricato ({len(self.menu)} pizze, da database: {da_db})")
+                logger.info(f"Menu caricato ({len(self.menu)} pizze, da database: {da_db}) a {time.monotonic() - t0:.1f}s")
                 await conn.session.update(
                     session=get_session_config(
                         menu_testo=menu_come_testo(self.menu),
@@ -54,7 +60,17 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
                         sample_rate=settings.sample_rate,
                     )
                 )
+                # Il saluto registrato fa gia' parte della conversazione:
+                # Gavina sa di essersi presentata e non lo ripete.
+                await conn.conversation.item.create(item={
+                    "type": "message", "role": "assistant",
+                    "content": [{"type": "output_text", "text": TESTO_SALUTO}],
+                })
+                for pezzo in self._audio_in_attesa:
+                    await conn.input_audio_buffer.append(audio=pezzo)
+                self._audio_in_attesa.clear()
                 self.connection = conn
+                logger.info(f"Sessione pronta a {time.monotonic() - t0:.1f}s")
                 asyncio.create_task(self._saluta_quando_pronto())
                 await self._handle_events()
         except Exception as e:
@@ -74,8 +90,12 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
         except asyncio.TimeoutError:
             return  # audio mai attivato: il saluto andrebbe perso
         if not self._gia_risposto and self.connection is not None:
+            # Saluto dal vivo: usato solo se il saluto registrato non e'
+            # stato riprodotto sul telefono del cliente.
             self._gia_risposto = True
-            await self.connection.response.create()
+            await self.connection.response.create(response={
+                "instructions": f"Saluta ora il cliente dicendo: \"{TESTO_SALUTO}\" Poi aspetta che parli."
+            })
 
     async def _handle_events(self) -> None:
         """Process events from OpenAI Realtime API."""
@@ -222,11 +242,15 @@ class OpenAIRealtimeHandler(AsyncStreamHandler):
 
     async def receive(self, frame: tuple[int, np.ndarray]) -> None:
         """Receive audio from user and send to OpenAI."""
-        if not self.connection:
-            return
         _, array = frame
         array = array.squeeze()
         audio_message = base64.b64encode(array.tobytes()).decode("utf-8")
+        if not self.connection:
+            # Tiene al massimo gli ultimi ~3 secondi in attesa del collegamento.
+            self._audio_in_attesa.append(audio_message)
+            if len(self._audio_in_attesa) > 150:
+                del self._audio_in_attesa[:-150]
+            return
         await self.connection.input_audio_buffer.append(audio=audio_message)
 
     async def emit(self) -> tuple[int, np.ndarray] | AdditionalOutputs | None:
