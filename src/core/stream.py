@@ -68,7 +68,7 @@ def create_stream() -> Stream:
         # chiude in modo pulito — con 5 e 90s evitiamo che un singolo test
         # fallito blocchi tutti i tentativi successivi.
         concurrency_limit=5,
-        time_limit=90,
+        time_limit=300,  # 5 minuti: abbastanza per un ordine completo
     )
 
     logger.info("FastRTC stream created")

@@ -381,6 +381,36 @@
             font-size: 18px;
             letter-spacing: 0.5px;
         }
+
+        /* --- Avvio con un tocco (sblocca microfono e audio su iPhone) --- */
+        .start-overlay {
+            position: fixed; inset: 0; z-index: 2100;
+            background: rgba(0, 0, 0, 0.88);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 18px; padding: 32px; box-sizing: border-box; text-align: center;
+        }
+        .start-overlay[hidden] { display: none; }
+        .start-btn {
+            background: #e8892b; color: #111; border: 0; border-radius: 999px;
+            font-size: 19px; font-weight: 600; padding: 18px 34px; cursor: pointer;
+        }
+        .start-note { color: #aaa; font-size: 14px; max-width: 300px; line-height: 1.4; }
+
+        /* --- Riquadro con l'ordine registrato da GigiAI --- */
+        .ordine-box {
+            border: 1px solid #e8892b; border-radius: 12px; padding: 12px 14px;
+            margin: 10px 0; background: rgba(232, 137, 43, 0.08); font-size: 15px;
+        }
+        .ordine-box[hidden] { display: none; }
+        .ordine-titolo { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #e8892b; margin-bottom: 6px; }
+        .ordine-riga { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+        .ordine-totale { display: flex; justify-content: space-between; border-top: 1px solid #444; margin-top: 6px; padding-top: 6px; font-weight: 700; }
+        .paga-btn {
+            display: block; text-align: center; margin-top: 12px; padding: 14px;
+            background: #e8892b; color: #111; border-radius: 10px; font-weight: 700;
+            text-decoration: none; font-size: 17px;
+        }
+        .paga-btn[hidden] { display: none; }
     </style>
 </head>
 
@@ -388,6 +418,10 @@
     <div id="error-toast" class="toast"></div>
     <div id="audio-unlock-overlay" class="audio-unlock-overlay" hidden>
         Tocca lo schermo per attivare l'audio di GigiAI
+    </div>
+    <div id="start-overlay" class="start-overlay">
+        <button class="start-btn" id="start-btn">🍕 Ordina a voce con GigiAI</button>
+        <div class="start-note">Il telefono ti chiederà il permesso di usare il microfono: tocca "Consenti" per parlare con GigiAI.</div>
     </div>
     <div class="container">
         <a class="back-link" href="https://pizzeria-da-gigi-sito.onrender.com/">&larr; Torna al menu</a>
@@ -402,6 +436,12 @@
         </div>
         <div class="pizza-ticker" aria-hidden="true">
             <div class="pizza-ticker-track" id="pizza-ticker-track"></div>
+        </div>
+        <div class="ordine-box" id="ordine-box" hidden>
+            <div class="ordine-titolo">Il tuo ordine</div>
+            <div id="ordine-righe"></div>
+            <div class="ordine-totale"><span>Totale</span><span id="ordine-totale"></span></div>
+            <a class="paga-btn" id="paga-btn" hidden href="#">Procedi al pagamento →</a>
         </div>
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages"></div>
@@ -689,7 +729,13 @@
                 const eventSource = new EventSource('/outputs?webrtc_id=' + webrtc_id);
                 eventSource.addEventListener("output", (event) => {
                     const eventJson = JSON.parse(event.data);
-                    addMessage(eventJson.role, eventJson.content);
+                    if (eventJson.type === 'ordine') {
+                        mostraOrdine(eventJson);
+                    } else if (eventJson.type === 'pagamento') {
+                        mostraPagamento(eventJson.url);
+                    } else if (eventJson.role) {
+                        addMessage(eventJson.role, eventJson.content);
+                    }
                 });
             } catch (err) {
                 clearTimeout(timeoutId);
@@ -697,6 +743,38 @@
                 showError(`Connessione fallita: ${err.message || err}`);
                 stop();
             }
+        }
+
+        function formattaEuro(v) {
+            return Number(v || 0).toFixed(2).replace('.', ',') + ' €';
+        }
+
+        function mostraOrdine(dati) {
+            const box = document.getElementById('ordine-box');
+            const contenitore = document.getElementById('ordine-righe');
+            contenitore.innerHTML = '';
+            (dati.righe || []).forEach(r => {
+                const riga = document.createElement('div');
+                riga.className = 'ordine-riga';
+                const nome = document.createElement('span');
+                nome.textContent = r.quantita + '× ' + r.nome + ' (' + r.formato + ')';
+                const prezzo = document.createElement('span');
+                prezzo.textContent = formattaEuro(r.subtotale);
+                riga.append(nome, prezzo);
+                contenitore.appendChild(riga);
+            });
+            document.getElementById('ordine-totale').textContent = formattaEuro(dati.totale);
+            box.hidden = !(dati.righe && dati.righe.length);
+            // Se l'ordine cambia dopo la conferma, il pulsante va richiesto di nuovo.
+            document.getElementById('paga-btn').hidden = true;
+        }
+
+        function mostraPagamento(url) {
+            const btn = document.getElementById('paga-btn');
+            btn.href = url;
+            btn.hidden = false;
+            document.getElementById('ordine-box').hidden = false;
+            btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function addMessage(role, content) {
@@ -745,9 +823,14 @@
             });
         });
 
-        // GigiAI si connette e si presenta da sola, senza bisogno di un pulsante:
-        // basta entrare in questa pagina per parlare con lei.
-        setupWebRTC();
+        // Si parte con un tocco: su iPhone/Safari l'audio e il microfono si
+        // possono attivare solo dopo un gesto dell'utente. Cosi' il saluto di
+        // GigiAI non va perso e non serve la schermata "tocca per attivare".
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-overlay').hidden = true;
+            audioOutput.play().catch(() => {});
+            setupWebRTC();
+        });
     </script>
 </body>
 

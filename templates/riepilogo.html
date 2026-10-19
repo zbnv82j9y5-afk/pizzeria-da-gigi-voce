@@ -14,6 +14,25 @@
   localStorage.removeItem('carrelloAssistente');
 } catch (e) {} })();
 </script>
+<script>
+/* Ordine dettato a GigiAI (assistente vocale): arriva come
+   ?ordine_vocale=<carrello in base64url> e diventa il carrello del sito,
+   cosi' il cliente trova qui le pizze e completa dati e pagamento. */
+(function () { try {
+  var m = /[?&]ordine_vocale=([A-Za-z0-9_-]+)/.exec(location.search);
+  if (!m) return;
+  var b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  var dati = JSON.parse(atob(b64));
+  var carrello = {};
+  Object.keys(dati).forEach(function (num) {
+    var g = parseInt(dati[num].grande, 10) || 0, p = parseInt(dati[num].piccola, 10) || 0;
+    if (/^\d+$/.test(num) && (g > 0 || p > 0)) carrello[num] = { grande: g, piccola: p };
+  });
+  if (Object.keys(carrello).length) localStorage.setItem('carrello', JSON.stringify(carrello));
+  history.replaceState(null, '', location.pathname);
+} catch (e) {} })();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riepilogo Ordine - Pizzeria da Gigi</title>

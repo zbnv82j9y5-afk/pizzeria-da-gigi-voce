@@ -25,6 +25,9 @@ class Settings:
     base_dir: Path = Path(__file__).parent.parent.parent
     static_dir: Path = base_dir / "static"
 
+    # Sito con menu, riepilogo e pagamento (dove GigiAI manda il cliente a pagare)
+    sito_url: str = os.getenv("SITO_URL", "https://pizzeria-da-gigi-sito.onrender.com")
+
     # Lambda API (for future integration)
     lambda_api_url: str = os.getenv("LAMBDA_API_URL", "")
     lambda_api_key: str = os.getenv("LAMBDA_API_KEY", "")
