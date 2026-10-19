@@ -1031,7 +1031,7 @@
                 const risposta = await fetch('/api/checkout/avvia', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    signal: AbortSignal.timeout(10000),
+                    signal: AbortSignal.timeout(30000),
                     body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo, comune: leggiComune() } })
                 });
                 if (!risposta.ok) {
@@ -1060,6 +1060,22 @@
                 },
             });
             satispay.open();
+            mostraAnnullaSatispay();
+        }
+
+        // Nella app installata (PWA) la schermata Satispay copre tutto e non
+        // ha un "indietro": questo pulsante permette sempre di tornare qui.
+        function mostraAnnullaSatispay() {
+            if (document.getElementById('annullaSatispay')) return;
+            const b = document.createElement('button');
+            b.id = 'annullaSatispay';
+            b.type = 'button';
+            b.textContent = '✕ Annulla e torna all\'ordine';
+            b.style.cssText = 'position:fixed;left:16px;right:16px;bottom:24px;z-index:2147483647;' +
+                'padding:16px;border:0;border-radius:14px;background:#222;color:#fff;font-size:17px;' +
+                'font-weight:700;box-shadow:0 6px 24px rgba(0,0,0,.4);';
+            b.onclick = () => location.replace(location.pathname);
+            document.body.appendChild(b);
         }
 
         function attendiConfermaSatispay(checkoutId, nome, telefono, indirizzo) {
@@ -1148,7 +1164,7 @@
                 const risposta = await fetch('/api/checkout/stripe/avvia', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    signal: AbortSignal.timeout(10000),
+                    signal: AbortSignal.timeout(30000),
                     body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo, comune: leggiComune() } })
                 });
                 if (!risposta.ok) {
