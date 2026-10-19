@@ -11,8 +11,14 @@ from fastapi.staticfiles import StaticFiles
 from pizzeria_ordini import router as ordini_router
 from satispay_routes import router as satispay_router
 from stripe_routes import router as stripe_router
+from ordini_tracking import router as tracking_router
 
 app = FastAPI()
+
+# --- PWA Da Gigi: alias sulla Home (manifest, /sw.js) ---
+from pizzeria_pwa import router as pwa_router
+app.include_router(pwa_router)
+
 
 # Sistema ordini: verifica davvero la disponibilita' e scala il magazzino su
 # Supabase quando un cliente conferma l'ordine (se il database e' collegato
@@ -22,6 +28,7 @@ app = FastAPI()
 app.include_router(ordini_router)
 app.include_router(satispay_router)
 app.include_router(stripe_router)
+app.include_router(tracking_router)
 
 # Percorsi delle cartelle
 BASE_DIR = os.path.dirname(__file__)
@@ -48,6 +55,15 @@ COOKIE_MAX_AGE = 60 * 60 * 24 * 30  # 30 giorni: una volta inserita, non la rich
 # nessuno riuscirebbe mai ad autenticarsi). Tutto il resto — home compresa,
 # menu, riepilogo/ordine, assistente, dashboard staff — richiede la password.
 PERCORSI_LIBERI = {"/password", "/entra-password", "/api/satispay/callback", "/api/stripe/webhook"}
+
+# PWA (icona sulla Home): manifest, service worker e icone devono essere
+# leggibili anche senza cookie, perche' il telefono li scarica "da solo"
+# quando crei l'icona. Sono file pubblici (nomi, colori, immagini): nessuna
+# pagina del sito diventa accessibile senza password.
+PERCORSI_LIBERI_PWA = {"/manifest.webmanifest", "/sw.js", "/favicon.ico",
+                       "/staff/accesso/manifest.webmanifest",
+                       "/staff/pizzaiolo/manifest.webmanifest", "/staff/admin/manifest.webmanifest"}
+PREFISSI_LIBERI_PWA = ("/static/pwa/",)
 
 
 def _token_atteso() -> str:
@@ -104,7 +120,8 @@ def _pagina_password(next_path: str, errore: bool = False) -> str:
 @app.middleware("http")
 async def richiedi_password_cantiere(request: Request, call_next):
     path = request.url.path
-    if path in PERCORSI_LIBERI or _accesso_valido(request):
+    if (path in PERCORSI_LIBERI or path in PERCORSI_LIBERI_PWA
+            or path.startswith(PREFISSI_LIBERI_PWA) or _accesso_valido(request)):
         return await call_next(request)
 
     prossimo = path + (("?" + request.url.query) if request.url.query else "")

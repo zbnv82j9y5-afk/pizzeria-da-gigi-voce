@@ -58,6 +58,7 @@ class DatiCliente(BaseModel):
     nome: str = ""
     telefono: str = ""
     indirizzo: str = ""
+    comune: str = ""
 
 
 class NuovoOrdine(BaseModel):
@@ -145,6 +146,10 @@ async def crea_ordine_endpoint(ordine: NuovoOrdine):
         "Content-Type": "application/json",
     }
 
+    from ordini_tracking import costo_consegna, indirizzo_completo, inserisci_scheda, prezzi_pizze
+
+    comune = ""
+    costo_consegna_centesimi = 0
     if ordine.modalita == "consegna":
         try:
             async with httpx.AsyncClient(timeout=6.0) as client:
@@ -160,19 +165,84 @@ async def crea_ordine_endpoint(ordine: NuovoOrdine):
                     "il ritiro in negozio per pagare in contanti."
                 ),
             }
+        try:
+            async with httpx.AsyncClient(timeout=6.0) as client:
+                valido, costo_consegna_centesimi, comune, messaggio = await costo_consegna(
+                    client, headers, cfg["url"], ordine.cliente.comune)
+        except httpx.HTTPError:
+            valido, costo_consegna_centesimi, comune, messaggio = True, 250, ordine.cliente.comune.strip(), ""
+        if not valido:
+            return {"ok": False, "verificato": True, "risultati": [], "motivo_generale": messaggio}
+
+    # L'indirizzo che vedono staff e fattorino comprende sempre il paese.
+    indirizzo = indirizzo_completo(ordine.cliente.indirizzo, comune) if ordine.modalita == "consegna" else ordine.cliente.indirizzo
+    cliente = DatiCliente(nome=ordine.cliente.nome, telefono=ordine.cliente.telefono,
+                          indirizzo=indirizzo, comune=comune)
+
+    # Scheda d'ordine (serve a "Il mio ordine" e alla schermata Ordini dello
+    # staff). Se non si riesce a crearla l'ordine prosegue comunque.
+    scheda_id = None
+    righe_scheda = []
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            prezzi = await prezzi_pizze(client, headers, cfg["url"], [a.numero_menu for a in ordine.items])
+            totale = 0
+            for a in ordine.items:
+                info = prezzi.get(a.numero_menu) or {}
+                prezzo = info.get("prezzo_grande") if a.formato == "grande" else info.get("prezzo_piccola")
+                pc = round(float(prezzo or 0) * 100)
+                totale += pc * a.quantita
+                righe_scheda.append({"numero_menu": a.numero_menu, "formato": a.formato,
+                                     "quantita": a.quantita, "prezzo_unitario_centesimi": pc})
+            totale += costo_consegna_centesimi
+            resp = await inserisci_scheda(client, headers, cfg["url"], {
+                "carrello": righe_scheda,
+                "nome_cliente": cliente.nome,
+                "telefono_cliente": cliente.telefono or "-",
+                "indirizzo_cliente": cliente.indirizzo,
+                "importo_centesimi": totale,
+                "provider": "contanti",
+                "stato": "da_pagare",
+                "modalita": ordine.modalita if ordine.modalita in ("ritiro", "consegna") else "ritiro",
+                "comune": comune or None,
+            })
+            if resp.status_code in (200, 201) and resp.json():
+                scheda_id = resp.json()[0]["id"]
+    except (httpx.HTTPError, ValueError, KeyError):
+        scheda_id = None
 
     risultati = []
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
             for articolo in ordine.items:
-                riga_esito = await _elabora_articolo(client, headers, cfg["url"], ordine.cliente, articolo)
+                riga_esito = await _elabora_articolo(client, headers, cfg["url"], cliente, articolo)
                 risultati.append(riga_esito)
     except httpx.HTTPError:
         # Supabase irraggiungibile ora: stesso ripiego, meglio far passare
         # l'ordine che bloccare il cliente per un problema di rete non suo.
         # Nota: se alcuni articoli erano gia' stati elaborati con successo
         # prima dell'errore, quelli restano comunque registrati nel database.
-        return {"ok": True, "verificato": False, "risultati": risultati}
+        return {"ok": True, "verificato": False, "risultati": risultati, "checkout_id": scheda_id}
+
+    almeno_uno_ok = any(r["ok"] for r in risultati)
+    if scheda_id:
+        esiti = []
+        for riga, esito in zip(righe_scheda, risultati):
+            esiti.append({**riga, "ok": esito["ok"], "motivo": esito.get("motivo"), "ordine_id": esito.get("ordine_id")})
+        modifica = {"ordini_creati": esiti}
+        if not almeno_uno_ok:
+            modifica.update(stato="fallito", stato_ordine="annullato")
+        try:
+            async with httpx.AsyncClient(timeout=6.0) as client:
+                r = await client.patch(f"{cfg['url']}/rest/v1/checkout_pendenti", headers=headers,
+                                       params={"id": f"eq.{scheda_id}"}, json=modifica)
+                if r.status_code == 400 and "stato_ordine" in modifica:
+                    modifica.pop("stato_ordine")
+                    await client.patch(f"{cfg['url']}/rest/v1/checkout_pendenti", headers=headers,
+                                       params={"id": f"eq.{scheda_id}"}, json=modifica)
+        except httpx.HTTPError:
+            pass
 
     tutti_ok = all(r["ok"] for r in risultati) if risultati else True
-    return {"ok": tutti_ok, "verificato": True, "risultati": risultati}
+    return {"ok": tutti_ok, "verificato": True, "risultati": risultati,
+            "checkout_id": scheda_id if almeno_uno_ok else None}

@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+<script>
+/* Ogni nuova apertura dell'app (o del sito in una nuova scheda) parte con il
+   carrello vuoto. Nome, telefono e indirizzo (datiCliente) restano salvati.
+   Non si svuota al ritorno da un pagamento (Stripe aggiunge ?pagamento=...),
+   altrimenti il riepilogo non troverebbe l'ordine appena pagato. */
+(function () { try {
+  if (sessionStorage.getItem('dg_sessione')) return;
+  sessionStorage.setItem('dg_sessione', '1');
+  if (/[?&](pagamento|checkout_id)=/.test(location.search)) return;
+  localStorage.removeItem('carrello');
+  localStorage.removeItem('carrelloAssistente');
+} catch (e) {} })();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riepilogo Ordine - Pizzeria da Gigi</title>
@@ -119,6 +132,9 @@
         }
 
         .indirizzo-input { width: 100%; margin-bottom: 4px; }
+        .comune-select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236b6459' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 36px; }
+        .comune-select.vuoto { color: var(--muted); }
+        .btn-segui { background: var(--green-btn) !important; }
 
         .delivery-toggle {
             display: flex;
@@ -414,6 +430,19 @@
             .header h1 { font-size: 1.6em; }
         }
     </style>
+  <!-- PWA Da Gigi: inizio -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#c0392b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Da Gigi">
+  <meta name="application-name" content="Da Gigi">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/pwa/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/pwa/icons/favicon-32.png">
+  <script src="/static/pwa/pwa-install.js" defer></script>
+  <!-- PWA Da Gigi: fine -->
+  <script src="/static/js/miei-ordini.js"></script>
 </head>
 <body>
     <div class="container">
@@ -434,7 +463,9 @@
                 <button type="button" class="mode-btn" id="modeRitiro" onclick="setModalita('ritiro')">🏪 Ritiro in negozio</button>
                 <button type="button" class="mode-btn" id="modeConsegna" onclick="setModalita('consegna')">🏠 Consegna a domicilio (+<span id="deliveryFeeLabel"></span>)</button>
             </div>
-            <input type="text" id="custIndirizzo" class="indirizzo-input" placeholder="Indirizzo di consegna" oninput="saveCustomerData(); this.classList.remove('field-error')" style="display:none;">
+            <input type="text" id="custIndirizzo" class="indirizzo-input" placeholder="Via e numero civico" oninput="saveCustomerData(); this.classList.remove('field-error')" style="display:none;">
+            <select id="custComune" class="indirizzo-input comune-select" onchange="cambiaComune(); this.classList.remove('field-error')" style="display:none;"></select>
+            <input type="text" id="custComuneLibero" class="indirizzo-input" placeholder="Paese o città" oninput="saveCustomerData(); this.classList.remove('field-error')" style="display:none;">
             <div class="field-hint">Questi dati restano salvati su questo dispositivo per il prossimo ordine.</div>
         </div>
 
@@ -489,7 +520,61 @@
         ];
 
         // 👉 MODIFICA QUI l'importo della maggiorazione per la consegna a domicilio
-        const DELIVERY_FEE = 2.50;
+        // Ora il costo dipende dal paese scelto (tabella comuni_consegna su
+        // Supabase): questo e' solo il valore iniziale / di ripiego.
+        let DELIVERY_FEE = 2.50;
+        let comuniConsegna = [];   // [{nome, costo_centesimi}] da /api/consegna/comuni
+
+        function leggiComune() {
+            const sel = document.getElementById('custComune');
+            const libero = document.getElementById('custComuneLibero');
+            return comuniConsegna.length ? (sel.value || '') : (libero.value || '').trim();
+        }
+
+        function aggiornaCostoConsegna() {
+            const scelto = comuniConsegna.find(c => c.nome === leggiComune());
+            const costi = comuniConsegna.map(c => c.costo_centesimi);
+            let prefisso = '';
+            if (scelto) {
+                DELIVERY_FEE = scelto.costo_centesimi / 100;
+            } else if (costi.length) {
+                DELIVERY_FEE = Math.min(...costi) / 100;
+                if (Math.min(...costi) !== Math.max(...costi)) prefisso = 'da ';
+            }
+            document.getElementById('deliveryFeeLabel').textContent = prefisso + formatPrice(DELIVERY_FEE);
+        }
+
+        function riempiComuni(salvato) {
+            const sel = document.getElementById('custComune');
+            sel.innerHTML = '<option value="">Scegli il paese…</option>' + comuniConsegna.map(c =>
+                `<option value="${c.nome}">${c.nome} (consegna ${formatPrice(c.costo_centesimi / 100)})</option>`).join('');
+            if (salvato && comuniConsegna.some(c => c.nome === salvato)) sel.value = salvato;
+            sel.classList.toggle('vuoto', !sel.value);
+        }
+
+        function cambiaComune() {
+            document.getElementById('custComune').classList.toggle('vuoto', !leggiComune());
+            saveCustomerData();
+            aggiornaCostoConsegna();
+            loadOrder();
+        }
+
+        async function caricaComuni() {
+            const salvato = (JSON.parse(localStorage.getItem('datiCliente')) || {}).comune || '';
+            try {
+                const r = await fetch('/api/consegna/comuni', { signal: AbortSignal.timeout(6000) });
+                if (r.ok) {
+                    const d = await r.json();
+                    comuniConsegna = d.comuni || [];
+                    if (!comuniConsegna.length && d.costo_fisso_centesimi) DELIVERY_FEE = d.costo_fisso_centesimi / 100;
+                }
+            } catch (e) { comuniConsegna = []; }
+            if (comuniConsegna.length) riempiComuni(salvato);
+            else document.getElementById('custComuneLibero').value = salvato;
+            updateModalitaUI();
+            aggiornaCostoConsegna();
+            loadOrder();
+        }
 
         let modalita = 'ritiro'; // 'ritiro' oppure 'consegna'
         let justConfirmed = false;
@@ -523,6 +608,7 @@
                 nome: document.getElementById('custNome').value,
                 telefono: document.getElementById('custTelefono').value,
                 indirizzo: document.getElementById('custIndirizzo').value,
+                comune: leggiComune(),
                 modalita: modalita
             };
             localStorage.setItem('datiCliente', JSON.stringify(dati));
@@ -539,6 +625,8 @@
             document.getElementById('modeRitiro').classList.toggle('active', modalita === 'ritiro');
             document.getElementById('modeConsegna').classList.toggle('active', modalita === 'consegna');
             document.getElementById('custIndirizzo').style.display = modalita === 'consegna' ? 'block' : 'none';
+            document.getElementById('custComune').style.display = modalita === 'consegna' && comuniConsegna.length ? 'block' : 'none';
+            document.getElementById('custComuneLibero').style.display = modalita === 'consegna' && !comuniConsegna.length ? 'block' : 'none';
         }
 
         // ===== MODIFICA QUANTITA' DIRETTAMENTE DAL RIEPILOGO =====
@@ -689,7 +777,7 @@
                     <div><b>Nome:</b> ${cliente.nome || '-'}</div>
                     <div><b>Telefono:</b> ${cliente.telefono || '-'}</div>
                     <div><b>Modalità:</b> ${ordine.modalita === 'consegna' ? '🏠 Consegna a domicilio' : '🏪 Ritiro in negozio'}</div>
-                    ${ordine.modalita === 'consegna' ? `<div><b>Indirizzo:</b> ${cliente.indirizzo || '-'}</div>` : ''}
+                    ${ordine.modalita === 'consegna' ? `<div><b>Indirizzo:</b> ${cliente.indirizzo || '-'}${cliente.comune ? ', ' + cliente.comune : ''}</div>` : ''}
                 </div>
                 <div style="margin: 6px 0 14px;">${itemsHtml}</div>
                 <div class="order-total">
@@ -700,6 +788,11 @@
                         <span class="amount">${formatPrice(ordine.totale)}</span>
                     </div>
                 </div>
+                ${(typeof MieiOrdini !== 'undefined' && MieiOrdini.elenco().length) ? `
+                <div class="order-actions">
+                    <a href="ordine.html" class="btn btn-confirm btn-segui">📦 Segui il tuo ordine</a>
+                </div>
+                <p style="text-align:center; font-size:.82em; color:var(--muted); margin:-4px 0 10px;">Vedi quando la pizzeria lo conferma e l'orario di consegna. Lo ritrovi anche nella Home.</p>` : ''}
                 <div class="order-actions">
                     <a href="menu.html" class="btn btn-confirm">🍕 Nuovo Ordine</a>
                     <a href="index_pizzeria.html" class="btn btn-home">🏠 Home</a>
@@ -768,6 +861,11 @@
                 showFormError('⚠️ Inserisci l\'indirizzo di consegna');
                 return;
             }
+            if (modalita === 'consegna' && !leggiComune()) {
+                markFieldError(comuniConsegna.length ? 'custComune' : 'custComuneLibero');
+                showFormError('⚠️ Scegli il paese o la città di consegna');
+                return;
+            }
 
             const { items, subtotale, maggiorazione, totale } = computeTotals(carrello);
 
@@ -790,7 +888,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     signal: AbortSignal.timeout(6000),
-                    body: JSON.stringify({ items: righeOrdine, modalita, cliente: { nome, telefono, indirizzo } })
+                    body: JSON.stringify({ items: righeOrdine, modalita, cliente: { nome, telefono, indirizzo, comune: leggiComune() } })
                 });
                 if (risposta.ok) esito = await risposta.json();
             } catch (e) {
@@ -804,6 +902,8 @@
                 return;
             }
 
+            if (esito && esito.checkout_id && typeof MieiOrdini !== 'undefined') MieiOrdini.salva(esito.checkout_id);
+
             if (esito && esito.verificato && !esito.ok) {
                 applicaEsitoParziale(carrello, righeOrdine, esito.risultati);
                 return;
@@ -811,8 +911,9 @@
 
             const ultimoOrdine = {
                 data: Date.now(),
-                cliente: { nome, telefono, indirizzo },
+                cliente: { nome, telefono, indirizzo, comune: leggiComune() },
                 modalita,
+                checkoutId: (esito && esito.checkout_id) || null,
                 items,
                 subtotale,
                 maggiorazione,
@@ -881,6 +982,11 @@
                 showFormError('⚠️ Inserisci l\'indirizzo di consegna');
                 return;
             }
+            if (modalita === 'consegna' && !leggiComune()) {
+                markFieldError(comuniConsegna.length ? 'custComune' : 'custComuneLibero');
+                showFormError('⚠️ Scegli il paese o la città di consegna');
+                return;
+            }
 
             const righeCarrello = [];
             entries.forEach(([num, data]) => {
@@ -898,7 +1004,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     signal: AbortSignal.timeout(10000),
-                    body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo } })
+                    body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo, comune: leggiComune() } })
                 });
                 if (!risposta.ok) {
                     const errore = await risposta.json().catch(() => ({}));
@@ -912,6 +1018,7 @@
                 return;
             }
 
+            if (typeof MieiOrdini !== 'undefined') MieiOrdini.salva(dati.checkout_id);
             bottone.style.display = 'none';
             const stato = document.getElementById('statoPagamentoSatispay');
             stato.style.display = 'block';
@@ -944,7 +1051,7 @@
                     const carrelloAttuale = JSON.parse(localStorage.getItem('carrello')) || {};
                     const { items, subtotale, maggiorazione, totale } = computeTotals(carrelloAttuale);
                     localStorage.setItem('ultimoOrdine', JSON.stringify({
-                        data: Date.now(), cliente: { nome, telefono, indirizzo }, modalita,
+                        data: Date.now(), cliente: { nome, telefono, indirizzo, comune: leggiComune() }, modalita, checkoutId,
                         items, subtotale, maggiorazione, totale, pagatoConSatispay: true
                     }));
                     localStorage.removeItem('carrello');
@@ -989,6 +1096,11 @@
                 showFormError("\u26a0\ufe0f Inserisci l'indirizzo di consegna");
                 return;
             }
+            if (modalita === 'consegna' && !leggiComune()) {
+                markFieldError(comuniConsegna.length ? 'custComune' : 'custComuneLibero');
+                showFormError('⚠️ Scegli il paese o la città di consegna');
+                return;
+            }
 
             // Salva i dati cliente PRIMA di lasciare il sito per Stripe, cosi'
             // al ritorno (success_url) loadCustomerData() li ritrova gia' compilati.
@@ -1009,7 +1121,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     signal: AbortSignal.timeout(10000),
-                    body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo } })
+                    body: JSON.stringify({ carrello: righeCarrello, modalita, cliente: { nome, telefono, indirizzo, comune: leggiComune() } })
                 });
                 if (!risposta.ok) {
                     const errore = await risposta.json().catch(() => ({}));
@@ -1017,6 +1129,7 @@
                 }
                 const dati = await risposta.json();
                 // Lascia il sito: pagina di pagamento sicura ospitata da Stripe.
+                if (typeof MieiOrdini !== 'undefined') MieiOrdini.salva(dati.checkout_id);
                 window.location.href = dati.url;
             } catch (e) {
                 bottone.disabled = false;
@@ -1057,7 +1170,7 @@
                     const carrelloAttuale = JSON.parse(localStorage.getItem('carrello')) || {};
                     const { items, subtotale, maggiorazione, totale } = computeTotals(carrelloAttuale);
                     localStorage.setItem('ultimoOrdine', JSON.stringify({
-                        data: Date.now(), cliente: { nome, telefono, indirizzo }, modalita,
+                        data: Date.now(), cliente: { nome, telefono, indirizzo, comune: leggiComune() }, modalita, checkoutId,
                         items, subtotale, maggiorazione, totale, pagatoConStripe: true
                     }));
                     localStorage.removeItem('carrello');
@@ -1089,6 +1202,7 @@
             if (!checkoutId || !esito) return;
 
             if (esito === 'stripe_ok') {
+                if (typeof MieiOrdini !== 'undefined') MieiOrdini.salva(checkoutId);
                 attendiConfermaStripe(checkoutId);
             } else if (esito === 'stripe_annullato') {
                 const stato = document.getElementById('statoPagamentoSatispay');
@@ -1104,6 +1218,7 @@
         loadCustomerData();
         loadOrder();
         gestisciRitornoDaStripe();
+        caricaComuni();
     </script>
 <div id="clearConfirmOverlay" class="confirm-overlay">
     <div class="confirm-box">

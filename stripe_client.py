@@ -56,7 +56,9 @@ async def crea_sessione_checkout(importo_centesimi: int, checkout_id: str, succe
     return await stripe.checkout.Session.create_async(
         api_key=STRIPE_SECRET_KEY,
         mode="payment",
-        payment_method_types=["card"],
+        # I metodi di pagamento (carta, Apple Pay, ...) si scelgono dal pannello
+        # Stripe: Settings > Payment methods. Stripe non accetta piu' qui
+        # il vecchio parametro payment_method_types.
         line_items=[{
             "price_data": {
                 "currency": "eur",

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<script>
+/* Ogni nuova apertura dell'app (o del sito in una nuova scheda) parte con il
+   carrello vuoto. Nome, telefono e indirizzo (datiCliente) restano salvati. */
+(function () { try {
+  if (sessionStorage.getItem('dg_sessione')) return;
+  sessionStorage.setItem('dg_sessione', '1');
+  if (/[?&](pagamento|checkout_id)=/.test(location.search)) return;
+  localStorage.removeItem('carrello');
+  localStorage.removeItem('carrelloAssistente');
+} catch (e) {} })();
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Il mio ordine - Pizzeria da Gigi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Mulish:wght@400;500;600;700;800&display=swap">
+    <style>
+        :root {
+            --cream: #faf6f0; --red: #c0392b; --red-dark: #a93226;
+            --green: #27ae60; --green-btn: #1e8449; --ink: #333333; --muted: #6b6459;
+            --border: rgba(51,51,51,0.14); --warn: #a97a12; --warn-bg: #faf0d9;
+            --good-bg: #e5f3ea;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Mulish', 'Segoe UI', sans-serif; background: var(--cream); color: var(--ink); padding: 16px; min-height: 100vh; }
+        .container { max-width: 700px; margin: 0 auto; background: #fff; border-radius: 18px; box-shadow: 0 14px 40px rgba(51,34,20,0.10); padding: 26px 22px; }
+        .checkered { height: 6px; border-radius: 6px 6px 0 0; background-image: repeating-conic-gradient(var(--red) 0% 25%, #fff 0% 50%); background-size: 6px 6px; margin: -26px -22px 18px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 2px solid #f1ece3; flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-family: 'Caveat', cursive; font-weight: 700; color: var(--red); font-size: 2em; }
+        .header h1 .icon { font-size: 0.7em; }
+        .btn-back { padding: 9px 18px; background: #fff; color: var(--ink); border: 1.5px solid var(--border); border-radius: 25px; text-decoration: none; font-size: 0.85em; font-weight: 600; }
+
+        .ordine { border: 1.5px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 18px; background: #fff; }
+        .ordine.chiuso { opacity: .75; }
+        .stato { display: flex; gap: 12px; align-items: center; border-radius: 14px; padding: 14px; margin-bottom: 14px; background: var(--good-bg); }
+        .stato.attesa { background: var(--warn-bg); }
+        .stato.annullato { background: #fbe6e3; }
+        .stato.fine { background: #f1ece3; }
+        .stato .ico { font-size: 34px; line-height: 1; }
+        .stato .tit { font-weight: 800; font-size: 1.08em; }
+        .stato .txt { color: var(--ink); font-size: .95em; margin-top: 2px; }
+        .stato .txt b { color: var(--green-btn); }
+
+        .passi { display: flex; gap: 4px; margin: 4px 0 16px; }
+        .passo { flex: 1; text-align: center; font-size: .68em; color: var(--muted); font-weight: 700; }
+        .passo::before { content: ''; display: block; height: 6px; border-radius: 3px; background: #ece4d8; margin-bottom: 6px; }
+        .passo.fatto::before { background: var(--green-btn); }
+        .passo.attuale { color: var(--green-btn); }
+
+        .meta { font-size: .85em; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+        .meta b { color: var(--ink); }
+        .riga { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f1ece3; font-size: .92em; }
+        .riga.ko { color: var(--muted); text-decoration: line-through; }
+        .totale { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.05em; padding-top: 10px; }
+        .totale span:last-child { color: var(--red); }
+        .nota { margin-top: 10px; font-size: .82em; background: var(--warn-bg); color: #6b4e08; border-radius: 10px; padding: 8px 10px; }
+        .codice { font-family: monospace; font-size: .85em; color: var(--muted); }
+
+        .vuoto { text-align: center; padding: 40px 10px; color: var(--muted); }
+        .vuoto .icon { font-size: 48px; margin-bottom: 10px; }
+        .vuoto h2 { color: var(--ink); margin-bottom: 6px; font-size: 1.2em; }
+        .btn-order { display: inline-block; margin-top: 18px; padding: 13px 26px; background: var(--red); color: #fff; border-radius: 30px; text-decoration: none; font-weight: 800; }
+        .aggiornato { text-align: center; font-size: .75em; color: var(--muted); margin-top: 6px; }
+        .sezione { font-size: .75em; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 800; margin: 22px 0 10px; }
+    </style>
+  <!-- PWA Da Gigi: inizio -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#c0392b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Da Gigi">
+  <meta name="application-name" content="Da Gigi">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/pwa/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/pwa/icons/favicon-32.png">
+  <script src="/static/pwa/pwa-install.js" defer></script>
+  <!-- PWA Da Gigi: fine -->
+  <script src="/static/js/miei-ordini.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="checkered"></div>
+        <div class="header">
+            <h1><span class="icon">📦</span> Il mio ordine</h1>
+            <a href="index_pizzeria.html" class="btn-back">← Torna alla Home</a>
+        </div>
+        <div id="elenco"><p class="aggiornato">Carico i tuoi ordini…</p></div>
+        <p class="aggiornato" id="aggiornato"></p>
+    </div>
+
+<script>
+    function nomeFormato(f) { return f === 'piccola' ? 'Piccola' : 'Grande'; }
+    function metodo(o) {
+        if (o.metodo === 'stripe') return '💳 Pagato con carta';
+        if (o.metodo === 'satispay') return '📲 Pagato con Satispay';
+        return o.modalita === 'consegna' ? '💶 Da pagare alla consegna' : '💶 Da pagare in negozio';
+    }
+    function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+    function schedaHTML(o) {
+        var d = MieiOrdini.descrivi(o);
+        var testo = d.testo ? esc(d.testo).replace(/(\d{1,2}:\d{2})/, '<b>$1</b>') : '';
+        var passiHTML = '';
+        if (o.stato_ordine !== 'annullato' && o.pagamento !== 'in_attesa') {
+            passiHTML = '<div class="passi">' + MieiOrdini.passi(o).map(function (p) {
+                return '<div class="passo' + (p.fatto ? ' fatto' : '') + (p.attuale ? ' attuale' : '') + '">' + p.nome + '</div>';
+            }).join('') + '</div>';
+        }
+        var righe = o.righe.map(function (r) {
+            var prezzo = r.prezzo_unitario_centesimi != null ? MieiOrdini.euro(r.prezzo_unitario_centesimi * r.quantita) : '';
+            return '<div class="riga' + (r.ok === false ? ' ko' : '') + '"><span>' + r.quantita + '× ' + esc(r.nome) + ' (' + nomeFormato(r.formato) + ')' +
+                (r.ok === false ? ' — non disponibile' : '') + '</span><span>' + prezzo + '</span></div>';
+        }).join('');
+        var data = new Date(o.creato_il);
+        var quando = data.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ', ' + MieiOrdini.ora(o.creato_il);
+        return '<div class="ordine' + (o.chiuso ? ' chiuso' : '') + '">' +
+            '<div class="stato ' + d.classe + '"><span class="ico">' + d.icona + '</span><div><div class="tit">' + esc(d.titolo) + '</div>' +
+            (testo ? '<div class="txt">' + testo + '</div>' : '') + '</div></div>' + passiHTML +
+            '<div class="meta"><b>' + (o.modalita === 'consegna' ? '🏠 Consegna a domicilio' : '🏪 Ritiro in negozio') + '</b>' +
+            (o.modalita === 'consegna' && o.indirizzo ? '<br>' + esc(o.indirizzo) : '') +
+            '<br>' + metodo(o) + ' · ordinato il ' + quando + ' · <span class="codice">#' + o.codice + '</span></div>' +
+            righe +
+            '<div class="totale"><span>Totale</span><span>' + MieiOrdini.euro(o.importo_centesimi) + '</span></div>' +
+            (o.omaggio_bibita ? '<div class="nota">🎁 Primo ordine con l\'app: una bibita in omaggio!</div>' : '') +
+            (o.note && /Rimborso/.test(o.note) ? '<div class="nota">' + esc(o.note) + '</div>' : '') +
+            '</div>';
+    }
+
+    function disegna(ordini) {
+        var el = document.getElementById('elenco');
+        var attivi = ordini.filter(function (o) { return !o.chiuso; });
+        var chiusi = ordini.filter(function (o) { return o.chiuso; }).slice(0, 3);
+        if (!ordini.length) {
+            el.innerHTML = '<div class="vuoto"><div class="icon">📦</div><h2>Nessun ordine in corso</h2>' +
+                '<p>Quando ordini, qui vedi le tue pizze e l\'orario di consegna.</p>' +
+                '<a href="menu.html" class="btn-order">🍕 Vai al Menu</a></div>';
+            return;
+        }
+        var html = attivi.map(schedaHTML).join('');
+        if (!attivi.length) html += '<div class="vuoto" style="padding:10px 10px 0;"><h2>Nessun ordine in corso</h2><a href="menu.html" class="btn-order">🍕 Nuovo ordine</a></div>';
+        if (chiusi.length) html += '<div class="sezione">Ordini recenti</div>' + chiusi.map(schedaHTML).join('');
+        el.innerHTML = html;
+    }
+
+    function carica() {
+        MieiOrdini.aggiorna().then(function (ordini) {
+            disegna(ordini);
+            document.getElementById('aggiornato').textContent = 'Aggiornato alle ' +
+                new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + ' · si aggiorna da solo';
+        }).catch(function () {
+            document.getElementById('aggiornato').textContent = 'Non riesco a contattare la pizzeria in questo momento: riprovo tra poco.';
+            if (!MieiOrdini.elenco().length) disegna([]);
+        });
+    }
+
+    carica();
+    setInterval(function () { if (!document.hidden) carica(); }, 20000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) carica(); });
+</script>
+</body>
+</html>

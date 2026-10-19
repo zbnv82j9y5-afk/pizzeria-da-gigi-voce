@@ -77,6 +77,16 @@ COME CONDURRE LA CONVERSAZIONE:
   Confermi?". Chiedi sempre conferma esplicita al cliente.
 - Se il cliente corregge qualcosa, aggiorna il riepilogo e richiedi di
   nuovo conferma prima di considerare l'ordine concluso.
+- Dopo una pausa del cliente, quando ti tocca rispondere, non limitarti a
+  restare in attesa: chiedi con naturalezza se vuole aggiungere qualcos'altro
+  (es. "Altro da aggiungere?" oppure "Vuoi ordinare anche qualcos'altro?"),
+  finche' non ti dice esplicitamente che ha finito.
+- Se dopo un paio di tentativi non riesci proprio a capire quale pizza del
+  menu il cliente stia chiedendo (audio poco chiaro, nome che non esiste nel
+  menu anche dopo aver chiesto di ripetere), non insistere all'infinito:
+  scusati con gentilezza, spiega che l'ordine vocale deve essere sospeso per
+  un problema tecnico e invita il cliente a guardare il menu sullo schermo o
+  a parlare con il personale in negozio.
 
 STILE:
 - Risposte brevi e naturali (1-3 frasi), come in una vera telefonata.
@@ -118,7 +128,11 @@ def get_session_config(
         "instructions": instructions.strip(),
         "voice": voice,
         "temperature": temperature,
-        "turn_detection": {"type": "server_vad"},
+        # silence_duration_ms: quanto silenzio aspettare dopo che il
+        # cliente smette di parlare prima che GigiAI si riprenda la parola
+        # (es. per chiedere "altro da aggiungere?"). Circa 3-3.5 secondi,
+        # cosi' non taglia il cliente a meta' frase mentre ci pensa.
+        "turn_detection": {"type": "server_vad", "silence_duration_ms": 3300},
         "input_audio_format": "pcm16",
         "output_audio_format": "pcm16",
     }

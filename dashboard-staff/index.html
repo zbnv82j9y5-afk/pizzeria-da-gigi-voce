@@ -72,6 +72,7 @@
     background:#fff; color:var(--muted); font-weight:800; font-size:.85em; cursor:pointer;
   }
   .role-btn.selected{ border-color:var(--red); color:var(--red); background:#fdf1ef; }
+  .role-ico{ display:block; width:38px; height:38px; margin:0 auto 6px; }
   .pin-dots{ display:flex; gap:12px; justify-content:center; margin:18px 0; }
   .pin-dots span{ width:14px; height:14px; border-radius:50%; border:2px solid var(--muted); display:inline-block; }
   .pin-dots span.filled{ background:var(--red); border-color:var(--red); }
@@ -171,6 +172,43 @@
   .big-num{ font-size:3em; font-weight:800; color:var(--red); line-height:1; font-family:'Caveat',cursive; }
   .big-label{ font-size:.72em; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-top:4px; }
 
+  /* ---- ordini ---- */
+  .tab-badge{ display:inline-block; min-width:20px; padding:1px 6px; margin-left:4px; border-radius:999px; background:#fff; color:var(--red); font-size:.85em; font-weight:800; }
+  .tabbar button:not(.active) .tab-badge{ background:var(--red); color:#fff; }
+  .tab-badge:empty{ display:none; }
+  .ord-card{ background:#fff; border:2px solid var(--border); border-radius:16px; padding:14px; margin-bottom:14px; }
+  .ord-card.nuovo{ border-color:var(--red); box-shadow:0 0 0 3px var(--critical-bg); }
+  .ord-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+  .ord-cod{ font-weight:800; font-size:1.05em; }
+  .ord-ora{ color:var(--muted); font-size:.8em; font-weight:700; }
+  .ord-stato{ font-size:.72em; font-weight:800; padding:4px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+  .st-nuovo{ background:var(--critical-bg); color:var(--critical); }
+  .st-accettato,.st-in_forno{ background:var(--warn-bg); color:var(--warn); }
+  .st-in_consegna,.st-pronto{ background:var(--good-bg); color:var(--good); }
+  .st-consegnato{ background:#f1ece4; color:var(--muted); }
+  .st-annullato{ background:#f1ece4; color:var(--critical); }
+  .ord-cliente{ font-size:.9em; line-height:1.55; margin-bottom:8px; }
+  .ord-cliente a{ color:var(--green-btn); font-weight:800; text-decoration:none; }
+  .ord-righe{ background:var(--cream); border-radius:12px; padding:8px 12px; margin-bottom:8px; }
+  .ord-riga{ display:flex; justify-content:space-between; font-size:.92em; padding:3px 0; }
+  .ord-riga b{ font-size:1.05em; }
+  .ord-riga.ko{ color:var(--muted); text-decoration:line-through; }
+  .ord-tot{ display:flex; justify-content:space-between; align-items:center; font-size:.88em; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
+  .ord-tot strong{ font-size:1.1em; }
+  .ord-entro{ font-weight:800; color:var(--ink); font-size:.95em; margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .ord-nota{ font-size:.8em; background:var(--warn-bg); color:#6b4e08; border-radius:10px; padding:6px 10px; margin-bottom:8px; }
+  .ord-azioni{ display:flex; gap:8px; flex-wrap:wrap; }
+  .ord-azioni .lbl{ width:100%; font-size:.75em; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+  .btn-ord{ flex:1; min-height:46px; border:none; border-radius:12px; font-weight:800; font-size:.92em; cursor:pointer; font-family:'Mulish',sans-serif; color:#fff; background:var(--green-btn); padding:0 10px; }
+  .btn-ord:active{ opacity:.85; }
+  .btn-ord.tempo{ background:var(--red); flex:1 1 20%; }
+  .btn-ord.sec{ background:#fff; color:var(--muted); border:1.5px solid var(--border); flex:0 0 auto; min-height:38px; font-size:.8em; }
+  .btn-ord.sec.conferma{ background:var(--critical); color:#fff; border-color:var(--critical); }
+  .btn-piu10{ background:#fff; border:1.5px solid var(--border); border-radius:10px; padding:5px 10px; font-weight:800; font-size:.78em; color:var(--muted); cursor:pointer; }
+  .ord-vuoto{ text-align:center; color:var(--muted); padding:30px 10px; }
+  .ord-vuoto .big{ font-size:40px; margin-bottom:8px; }
+  .ord-chiusi .ord-riga{ font-size:.82em; color:var(--muted); border-bottom:1px solid var(--border); padding:7px 0; }
+
   .toast{
     position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
     background:var(--ink); color:#fff; padding:10px 20px; border-radius:999px; font-size:.85em;
@@ -200,8 +238,8 @@
   <div class="login-sub">Accesso staff</div>
 
   <div class="role-row">
-    <button type="button" class="role-btn selected" id="roleBtnPizzaiolo" onclick="selectRole('pizzaiolo')">👨‍🍳 Pizzaiolo</button>
-    <button type="button" class="role-btn" id="roleBtnAdmin" onclick="selectRole('admin')">🗂️ Admin</button>
+    <button type="button" class="role-btn selected" id="roleBtnPizzaiolo" onclick="selectRole('pizzaiolo')"><svg class="role-ico" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="9" fill="#333333"/><circle cx="12" cy="15.5" r="5" fill="#faf6f0"/><circle cx="18" cy="12" r="6" fill="#faf6f0"/><circle cx="24" cy="15.5" r="5" fill="#faf6f0"/><rect x="11.5" y="15" width="13" height="8" fill="#faf6f0"/><rect x="10.5" y="23" width="15" height="3" rx="0.5" fill="#deaa60"/></svg>Pizzaiolo</button>
+    <button type="button" class="role-btn" id="roleBtnAdmin" onclick="selectRole('admin')"><svg class="role-ico" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="9" fill="#3d5a80"/><circle cx="11.5" cy="18" r="5.5" fill="#f2c45a"/><circle cx="11.5" cy="18" r="2.3" fill="#3d5a80"/><rect x="16" y="16.6" width="13.5" height="2.8" fill="#f2c45a"/><rect x="23.8" y="18.5" width="2.3" height="4.2" fill="#f2c45a"/><rect x="27.2" y="18.5" width="2.3" height="5.5" fill="#f2c45a"/></svg>Admin</button>
   </div>
 
   <div class="pin-dots" id="pinDots">
@@ -234,6 +272,7 @@
     <div class="actions"><button type="button" class="btn-logout" onclick="logout()">Esci</button></div>
   </div>
   <div class="tabbar">
+    <button type="button" id="tabOrdini" onclick="showScreen('ordini')">🧾 Ordini <span class="tab-badge" id="ordiniBadge"></span></button>
     <button type="button" id="tabMagazzino" onclick="showScreen('magazzino')">📦 Magazzino</button>
     <button type="button" id="tabStato" onclick="showScreen('stato')">📊 Stato del giorno</button>
     <button type="button" id="tabRiordino" onclick="showScreen('riordino')">🛒 Riordino</button>
@@ -241,6 +280,17 @@
   </div>
 
   <main>
+    <!-- ========================================================== -->
+    <!-- SCHERMATA ORDINI: ordini dei clienti da preparare            -->
+    <!-- ========================================================== -->
+    <div id="screen-ordini" class="hidden">
+      <div id="ordiniList"><p style="color:var(--muted);">Carico gli ordini…</p></div>
+      <div class="card ord-chiusi hidden" id="ordiniChiusiCard">
+        <div class="section-title">✔️ Completati oggi</div>
+        <div id="ordiniChiusiList"></div>
+      </div>
+    </div>
+
     <!-- ========================================================== -->
     <!-- SCHERMATA 2: MAGAZZINO                                      -->
     <!-- ========================================================== -->
@@ -479,10 +529,207 @@
     // mostrare qualunque schermata, cosi' i numeri sono giusti fin da subito.
     var { error: errSync } = await supabaseClient.rpc('sincronizza_stato_giornaliero');
     if (errSync) console.warn('sincronizza_stato_giornaliero:', errSync.message);
-    showScreen('magazzino');
+    showScreen('ordini');
+    controllaNuoviOrdini();
     subscribeRealtime();
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(refreshCurrentScreen, 15000);
+  }
+
+  // ==========================================================================
+  // Schermata Ordini: gli ordini dei clienti, dal piu' vecchio al piu' nuovo.
+  // La "scheda d'ordine" e' la tabella checkout_pendenti: carta e Satispay
+  // (stato "pagato") e contanti (stato "da_pagare"). Lo stato_ordine e
+  // l'orario che si impostano qui li vede subito il cliente in "Il mio ordine".
+  // ==========================================================================
+  var nomiPizze = null;          // numero_menu -> nome
+  var nuoviConosciuti = null;    // id degli ordini "nuovo" gia' visti (per il suono)
+  var audioCtx = null;
+
+  document.addEventListener('click', function () {
+    // Il browser permette i suoni solo dopo un tocco: prepariamo l'audio al primo.
+    if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  }, true);
+
+  function suonoNuovoOrdine() {
+    if (!audioCtx) return;
+    try {
+      [0, 0.25, 0.5].forEach(function (t) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.25, audioCtx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + t + 0.2);
+        o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + 0.21);
+      });
+    } catch (e) {}
+    if (navigator.vibrate) { try { navigator.vibrate([200, 100, 200]); } catch (e) {} }
+  }
+
+  function escHtml(t) {
+    return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+  function oraHHMM(iso) { return iso ? new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : ''; }
+  function minutiFa(iso) {
+    var m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    return m < 1 ? 'adesso' : (m < 60 ? m + ' min fa' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min fa');
+  }
+  function euroC(c) { return '€ ' + ((c || 0) / 100).toFixed(2).replace('.', ','); }
+
+  async function caricaNomiPizze() {
+    if (nomiPizze) return;
+    var { data } = await supabaseClient.from('pizze').select('numero_menu, nome');
+    nomiPizze = {};
+    (data || []).forEach(function (p) { nomiPizze[p.numero_menu] = p.nome; });
+  }
+
+  async function controllaNuoviOrdini() {
+    if (!supabaseClient) return;
+    var { data, error } = await supabaseClient.from('checkout_pendenti').select('id')
+      .in('stato', ['pagato', 'da_pagare']).eq('stato_ordine', 'nuovo');
+    if (error) return;
+    var ids = (data || []).map(function (r) { return r.id; });
+    var badge = document.getElementById('ordiniBadge');
+    badge.textContent = ids.length ? String(ids.length) : '';
+    document.title = (ids.length ? '(' + ids.length + ') ' : '') + 'Da Gigi — Staff';
+    if (nuoviConosciuti) {
+      var arrivati = ids.filter(function (id) { return nuoviConosciuti.indexOf(id) === -1; });
+      if (arrivati.length) {
+        suonoNuovoOrdine();
+        showToast('🔔 Nuovo ordine!');
+      }
+    }
+    nuoviConosciuti = ids;
+  }
+
+  var PROSSIMO = {
+    accettato: { stato: 'in_forno', testo: '🔥 Metti in forno' },
+    in_forno_consegna: { stato: 'in_consegna', testo: '🛵 Parte per la consegna' },
+    in_forno_ritiro: { stato: 'pronto', testo: '✅ Pronto: avvisa il ritiro' },
+    in_consegna: { stato: 'consegnato', testo: '✔️ Consegnato' },
+    pronto: { stato: 'consegnato', testo: '✔️ Ritirato' }
+  };
+  var ETICHETTA = { nuovo: 'Nuovo', accettato: 'Accettato', in_forno: 'In forno', in_consegna: 'In consegna', pronto: 'Pronto', consegnato: 'Completato', annullato: 'Annullato' };
+
+  function metodoPagamento(o) {
+    if (o.provider === 'stripe') return '<span class="chip good">💳 Pagato con carta</span>';
+    if (o.provider === 'satispay') return '<span class="chip good">📲 Pagato Satispay</span>';
+    return '<span class="chip warn">💶 Da incassare</span>';
+  }
+
+  function righeOrdineHTML(o) {
+    var righe = o.ordini_creati || o.carrello || [];
+    return righe.map(function (r) {
+      var nome = (nomiPizze && nomiPizze[r.numero_menu]) || ('Pizza n. ' + r.numero_menu);
+      return '<div class="ord-riga' + (r.ok === false ? ' ko' : '') + '"><span><b>' + r.quantita + '×</b> ' + escHtml(nome) +
+        ' <span style="color:var(--muted)">(' + (r.formato === 'piccola' ? 'piccola' : 'grande') + ')</span>' +
+        (r.ok === false ? ' — non disponibile' : '') + '</span></div>';
+    }).join('');
+  }
+
+  function cardOrdineHTML(o) {
+    var consegna = o.modalita === 'consegna' || (!o.modalita && o.indirizzo_cliente);
+    var az = '';
+    if (o.stato_ordine === 'nuovo') {
+      az = '<div class="ord-azioni"><span class="lbl">Accetta — ' + (consegna ? 'consegna' : 'pronto') + ' tra:</span>' +
+        [15, 30, 45, 60].map(function (m) {
+          return '<button type="button" class="btn-ord tempo" onclick="accettaOrdine(\'' + o.id + '\',' + m + ')">' + m + ' min</button>';
+        }).join('') + '</div>';
+    } else {
+      var chiave = o.stato_ordine === 'in_forno' ? ('in_forno_' + (consegna ? 'consegna' : 'ritiro')) : o.stato_ordine;
+      var p = PROSSIMO[chiave];
+      if (p) az = '<div class="ord-azioni"><button type="button" class="btn-ord" onclick="avanzaOrdine(\'' + o.id + '\',\'' + p.stato + '\')">' + p.testo + '</button></div>';
+    }
+    var annulla = '<div class="ord-azioni" style="margin-top:8px;justify-content:flex-end;">' +
+      '<button type="button" class="btn-ord sec" id="annulla_' + o.id + '" onclick="annullaOrdine(\'' + o.id + '\',' + (o.provider !== 'contanti') + ')">Annulla ordine</button></div>';
+    var entro = o.consegna_entro ? '<div class="ord-entro">⏰ ' + (consegna ? 'Consegna' : 'Pronto') + ' entro le ' + oraHHMM(o.consegna_entro) +
+      ' <button type="button" class="btn-piu10" onclick="spostaOrario(\'' + o.id + '\',\'' + o.consegna_entro + '\',10)">+10 min</button></div>' : '';
+    var note = '';
+    if (o.omaggio_bibita) note += '<div class="ord-nota">🎁 Primo ordine con l\'app: aggiungere una bibita in omaggio</div>';
+    if (o.note) note += '<div class="ord-nota">' + escHtml(o.note) + '</div>';
+    return '<div class="ord-card ' + o.stato_ordine + '">' +
+      '<div class="ord-head"><span><span class="ord-cod">#' + o.id.slice(0, 6).toUpperCase() + '</span> <span class="ord-ora">' +
+        oraHHMM(o.creato_il) + ' · ' + minutiFa(o.creato_il) + '</span></span>' +
+        '<span class="ord-stato st-' + o.stato_ordine + '">' + (ETICHETTA[o.stato_ordine] || o.stato_ordine) + '</span></div>' +
+      '<div class="ord-cliente"><b>' + escHtml(o.nome_cliente || 'Cliente') + '</b> · <a href="tel:' + escHtml(o.telefono_cliente) + '">📞 ' + escHtml(o.telefono_cliente) + '</a><br>' +
+        (consegna ? '🏠 <b>Consegna:</b> ' + escHtml(o.indirizzo_cliente || '-') : '🏪 <b>Ritiro in negozio</b>') + '</div>' +
+      '<div class="ord-righe">' + righeOrdineHTML(o) + '</div>' +
+      '<div class="ord-tot"><span>' + metodoPagamento(o) + '</span><strong>' + euroC(o.importo_centesimi) + '</strong></div>' +
+      note + entro + az + (o.stato_ordine === 'nuovo' || o.stato_ordine === 'accettato' ? annulla : '') +
+      '</div>';
+  }
+
+  async function loadOrdini() {
+    await caricaNomiPizze();
+    var { data, error } = await supabaseClient.from('checkout_pendenti').select('*')
+      .in('stato', ['pagato', 'da_pagare'])
+      .not('stato_ordine', 'in', '(consegnato,annullato)')
+      .order('creato_il', { ascending: true });
+    var list = document.getElementById('ordiniList');
+    if (error) {
+      list.innerHTML = '<div class="card" style="border-color:var(--warn);"><div class="section-title" style="color:var(--warn);">Database da aggiornare</div>' +
+        '<p style="font-size:.85em;color:var(--muted);margin:0;">Per vedere qui gli ordini va eseguito una volta il file <code>database/ordini_tracking.sql</code> su Supabase.</p></div>';
+      return;
+    }
+    var ordini = data || [];
+    list.innerHTML = ordini.length ? ordini.map(cardOrdineHTML).join('') :
+      '<div class="ord-vuoto"><div class="big">🍕</div><b>Nessun ordine da preparare</b><br>Quando un cliente ordina, compare qui con un suono.</div>';
+
+    var inizio = new Date(); inizio.setHours(0, 0, 0, 0);
+    var { data: chiusi } = await supabaseClient.from('checkout_pendenti').select('id, nome_cliente, stato_ordine, chiuso_il, importo_centesimi')
+      .in('stato', ['pagato', 'da_pagare']).in('stato_ordine', ['consegnato', 'annullato'])
+      .gte('chiuso_il', inizio.toISOString()).order('chiuso_il', { ascending: false }).limit(15);
+    var card = document.getElementById('ordiniChiusiCard');
+    chiusi = chiusi || [];
+    card.classList.toggle('hidden', !chiusi.length);
+    document.getElementById('ordiniChiusiList').innerHTML = chiusi.map(function (c) {
+      return '<div class="ord-riga"><span>' + oraHHMM(c.chiuso_il) + ' · #' + c.id.slice(0, 6).toUpperCase() + ' · ' + escHtml(c.nome_cliente || '') +
+        (c.stato_ordine === 'annullato' ? ' — <span style="color:var(--critical)">annullato</span>' : '') + '</span><span>' + euroC(c.importo_centesimi) + '</span></div>';
+    }).join('');
+  }
+
+  async function aggiornaOrdine(id, campi, messaggio) {
+    var { error } = await supabaseClient.from('checkout_pendenti').update(campi).eq('id', id);
+    if (error) { showToast('Errore: ' + error.message); return; }
+    if (messaggio) showToast(messaggio);
+    controllaNuoviOrdini();
+    loadOrdini();
+  }
+
+  function accettaOrdine(id, minuti) {
+    var adesso = new Date();
+    aggiornaOrdine(id, {
+      stato_ordine: 'accettato',
+      accettato_il: adesso.toISOString(),
+      consegna_entro: new Date(adesso.getTime() + minuti * 60000).toISOString()
+    }, 'Accettato: il cliente vede l\'orario');
+  }
+
+  function avanzaOrdine(id, stato) {
+    var campi = { stato_ordine: stato };
+    if (stato === 'consegnato') campi.chiuso_il = new Date().toISOString();
+    aggiornaOrdine(id, campi, 'Aggiornato');
+  }
+
+  function spostaOrario(id, attuale, minuti) {
+    aggiornaOrdine(id, { consegna_entro: new Date(new Date(attuale).getTime() + minuti * 60000).toISOString() }, 'Orario spostato di ' + minuti + ' minuti');
+  }
+
+  // Annullare chiede un secondo tocco (niente finestre di conferma del
+  // browser): il primo tocco cambia il pulsante, il secondo annulla davvero.
+  var annullaInAttesa = {};
+  function annullaOrdine(id, pagatoOnline) {
+    var btn = document.getElementById('annulla_' + id);
+    if (!annullaInAttesa[id]) {
+      annullaInAttesa[id] = setTimeout(function () {
+        delete annullaInAttesa[id];
+        if (btn) { btn.classList.remove('conferma'); btn.textContent = 'Annulla ordine'; }
+      }, 4000);
+      if (btn) { btn.classList.add('conferma'); btn.textContent = 'Tocca di nuovo per annullare'; }
+      return;
+    }
+    clearTimeout(annullaInAttesa[id]); delete annullaInAttesa[id];
+    aggiornaOrdine(id, { stato_ordine: 'annullato', chiuso_il: new Date().toISOString() },
+      pagatoOnline ? 'Annullato. Ricorda il rimborso dal pannello di pagamento' : 'Ordine annullato');
   }
 
   // ==========================================================================
@@ -491,6 +738,8 @@
   function showScreen(name) {
     if (name === 'conti' && currentRole !== 'admin') return; // solo Admin
     currentScreen = name;
+    document.getElementById('screen-ordini').classList.toggle('hidden', name !== 'ordini');
+    document.getElementById('tabOrdini').classList.toggle('active', name === 'ordini');
     document.getElementById('screen-magazzino').classList.toggle('hidden', name !== 'magazzino');
     document.getElementById('screen-stato').classList.toggle('hidden', name !== 'stato');
     document.getElementById('screen-riordino').classList.toggle('hidden', name !== 'riordino');
@@ -499,6 +748,7 @@
     document.getElementById('tabStato').classList.toggle('active', name === 'stato');
     document.getElementById('tabRiordino').classList.toggle('active', name === 'riordino');
     document.getElementById('tabConti').classList.toggle('active', name === 'conti');
+    if (name === 'ordini') loadOrdini();
     if (name === 'magazzino') loadMagazzino();
     if (name === 'stato') loadStato();
     if (name === 'riordino') loadRiordino();
@@ -743,10 +993,13 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pizze' }, refreshCurrentScreen)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ordini' }, refreshCurrentScreen)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'spese' }, refreshCurrentScreen)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'checkout_pendenti' }, refreshCurrentScreen)
       .subscribe();
   }
 
   function refreshCurrentScreen() {
+    controllaNuoviOrdini();
+    if (currentScreen === 'ordini') loadOrdini();
     if (currentScreen === 'magazzino') loadMagazzino();
     if (currentScreen === 'stato') loadStato();
     if (currentScreen === 'riordino') loadRiordino();

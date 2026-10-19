@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+<script>
+/* Ogni nuova apertura dell'app (o del sito in una nuova scheda) parte con il
+   carrello vuoto. Nome, telefono e indirizzo (datiCliente) restano salvati.
+   Non si svuota al ritorno da un pagamento (Stripe aggiunge ?pagamento=...),
+   altrimenti il riepilogo non troverebbe l'ordine appena pagato. */
+(function () { try {
+  if (sessionStorage.getItem('dg_sessione')) return;
+  sessionStorage.setItem('dg_sessione', '1');
+  if (/[?&](pagamento|checkout_id)=/.test(location.search)) return;
+  localStorage.removeItem('carrello');
+  localStorage.removeItem('carrelloAssistente');
+} catch (e) {} })();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Pizze - Pizzeria da Gigi</title>
@@ -320,6 +333,18 @@
             .header-title h1 { font-size: 1.808em; }
         }
     </style>
+  <!-- PWA Da Gigi: inizio -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#c0392b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Da Gigi">
+  <meta name="application-name" content="Da Gigi">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/pwa/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/pwa/icons/favicon-32.png">
+  <script src="/static/pwa/pwa-install.js" defer></script>
+  <!-- PWA Da Gigi: fine -->
 </head>
 <body>
     <div class="container">
@@ -341,7 +366,7 @@
         <div class="filters">
             <input type="text" id="searchInput" placeholder="🔍 Cerca pizza..." onkeyup="filterList()">
         </div>
-        <div class="size-note">Ogni pizza è disponibile in due formati: Grande e Piccola (più economica). Indica la quantità per il formato che vuoi e premi Aggiungi.</div>
+        <div class="size-note">Ogni pizza è disponibile in due formati: Grande e Piccola (più economica). Scegli la quantità con + e −: la pizza va subito nel carrello.</div>
 
         <details class="legenda-allergeni">
             <summary>Legenda numeri allergeni</summary>
@@ -528,7 +553,6 @@
                     </div>
                     <div class="pizza-footer">
                         <span class="pizza-subtotal">${subtotal > 0 ? formatPrice(subtotal) : ''}</span>
-                        ${esaurita ? '' : `<button class="btn-add" onclick="addToCart(${p.num})">➕ Aggiungi</button>`}
                     </div>
                 `;
                 list.appendChild(card);

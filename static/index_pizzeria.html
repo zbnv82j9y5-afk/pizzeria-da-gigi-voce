@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+<script>
+/* Ogni nuova apertura dell'app (o del sito in una nuova scheda) parte con il
+   carrello vuoto. Nome, telefono e indirizzo (datiCliente) restano salvati.
+   Non si svuota al ritorno da un pagamento (Stripe aggiunge ?pagamento=...),
+   altrimenti il riepilogo non troverebbe l'ordine appena pagato. */
+(function () { try {
+  if (sessionStorage.getItem('dg_sessione')) return;
+  sessionStorage.setItem('dg_sessione', '1');
+  if (/[?&](pagamento|checkout_id)=/.test(location.search)) return;
+  localStorage.removeItem('carrello');
+  localStorage.removeItem('carrelloAssistente');
+} catch (e) {} })();
+</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
     <title>🍕 Pizzeria Da Gigi</title>
@@ -491,6 +504,19 @@
             .hero-gallery { max-width: 100%; }
         }
     </style>
+  <!-- PWA Da Gigi: inizio -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#c0392b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Da Gigi">
+  <meta name="application-name" content="Da Gigi">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/pwa/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/pwa/icons/favicon-32.png">
+  <script src="/static/pwa/pwa-install.js" defer></script>
+  <!-- PWA Da Gigi: fine -->
+  <script src="/static/js/miei-ordini.js"></script>
 </head>
 <body>
 
@@ -506,6 +532,9 @@
         <div class="logo">Da Gigi</div>
         <div class="eyebrow">Pizzeria di Quartiere</div>
     </div>
+
+    <!-- "Il mio ordine": compare solo se il cliente ha un ordine in corso -->
+    <div id="mioOrdineBanner" style="padding:0 2px;"></div>
 
     <!-- HERO -->
     <div class="hero">

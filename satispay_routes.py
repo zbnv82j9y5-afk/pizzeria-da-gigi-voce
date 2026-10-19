@@ -16,6 +16,7 @@ import os
 
 import satispay_client
 from pizzeria_ordini import _load_supabase_config
+from ordini_tracking import costo_consegna, indirizzo_completo, inserisci_scheda
 
 router = APIRouter()
 
@@ -35,6 +36,7 @@ class DatiClienteCheckout(BaseModel):
     nome: str
     telefono: str
     indirizzo: str = ""
+    comune: str = ""
 
 
 class AvviaCheckoutBody(BaseModel):
@@ -98,8 +100,14 @@ async def avvia_checkout(body: AvviaCheckoutBody, request: Request):
                 "prezzo_unitario_centesimi": prezzo_centesimi,
             })
 
+        comune = ""
+        indirizzo = body.cliente.indirizzo
         if body.modalita == "consegna":
-            totale_centesimi += DELIVERY_FEE_CENTESIMI
+            valido, costo, comune, messaggio = await costo_consegna(client, headers, cfg["url"], body.cliente.comune)
+            if not valido:
+                raise HTTPException(400, messaggio)
+            totale_centesimi += costo
+            indirizzo = indirizzo_completo(body.cliente.indirizzo, comune)
 
         # --- fedelta': primo ordine -> omaggio bibita (fisico, non scontato
         # sul pagamento); dal secondo ordine -> punti (vedi _aggiorna_fedelta
@@ -112,18 +120,16 @@ async def avvia_checkout(body: AvviaCheckoutBody, request: Request):
         fed_righe = fed_resp.json()
         primo_ordine = not fed_righe or not fed_righe[0].get("primo_ordine_fatto")
 
-        crea_resp = await client.post(
-            f"{cfg['url']}/rest/v1/checkout_pendenti",
-            headers={**headers, "Prefer": "return=representation"},
-            json={
+        crea_resp = await inserisci_scheda(client, headers, cfg["url"], {
                 "carrello": righe_dettagliate,
                 "nome_cliente": body.cliente.nome,
                 "telefono_cliente": body.cliente.telefono,
-                "indirizzo_cliente": body.cliente.indirizzo,
+                "indirizzo_cliente": indirizzo,
                 "importo_centesimi": totale_centesimi,
                 "omaggio_bibita": primo_ordine,
-            },
-        )
+                "modalita": body.modalita if body.modalita in ("ritiro", "consegna") else "ritiro",
+                "comune": comune or None,
+        })
         crea_resp.raise_for_status()
         checkout = crea_resp.json()[0]
 

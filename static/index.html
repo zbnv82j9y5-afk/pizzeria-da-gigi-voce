@@ -167,11 +167,6 @@
             height: 100%;
         }
 
-        #start-button {
-            margin-left: auto;
-            margin-right: auto;
-        }
-
         .toast {
             position: fixed;
             top: 20px;
@@ -319,12 +314,83 @@
             from { transform: translateX(0); }
             to   { transform: translateX(-50%); }
         }
+
+        .back-link {
+            display: inline-block;
+            color: #aaaaaa;
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            padding: 6px 0;
+            flex-shrink: 0;
+        }
+
+        .back-link:hover {
+            color: #ffffff;
+        }
+
+        .status-line {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            color: #cccccc;
+            min-height: 24px;
+        }
+
+        .call-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .end-call-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #cccccc;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .end-call-btn:hover {
+            border-color: #ffffff;
+            color: #ffffff;
+        }
+
+        .audio-unlock-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+            box-sizing: border-box;
+            z-index: 2000;
+            cursor: pointer;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 
 <body>
     <div id="error-toast" class="toast"></div>
+    <div id="audio-unlock-overlay" class="audio-unlock-overlay" hidden>
+        Tocca lo schermo per attivare l'audio di GigiAI
+    </div>
     <div class="container">
+        <a class="back-link" href="https://pizzeria-da-gigi-sito.onrender.com/">&larr; Torna al menu</a>
         <div class="logo">
             <h1>🍕 GigiAI</h1>
         </div>
@@ -340,8 +406,12 @@
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages"></div>
         </div>
-        <div class="controls">
-            <button id="start-button">Inizia conversazione</button>
+        <div class="controls" id="controls">
+            <div class="status-line" id="status-line">Connessione a GigiAI...</div>
+            <div class="call-actions" id="call-actions" hidden>
+                <div class="mute-toggle" id="mute-toggle"></div>
+                <button class="end-call-btn" id="end-call-btn">Termina conversazione</button>
+            </div>
         </div>
     </div>
     <audio id="audio-output"></audio>
@@ -350,8 +420,8 @@
         let peerConnection;
         let webrtc_id;
         let isMuted = false;
+        let isConnecting = false;
         const audioOutput = document.getElementById('audio-output');
-        const startButton = document.getElementById('start-button');
         const chatMessages = document.getElementById('chat-messages');
 
         const PIZZA_MENU_NAMES = [
@@ -423,44 +493,38 @@
                 <line x1="1" y1="1" x2="23" y2="23"></line>
             </svg>`;
 
-        function updateButtonState() {
+        function updateStatusUI() {
             updateOrbState();
-            const button = document.getElementById('start-button');
-            button.innerHTML = '';
+            const statusLine = document.getElementById('status-line');
+            const callActions = document.getElementById('call-actions');
+            const muteToggle = document.getElementById('mute-toggle');
+            statusLine.innerHTML = '';
 
             if (peerConnection && (peerConnection.connectionState === 'connecting' || peerConnection.connectionState === 'new')) {
                 const spinner = document.createElement('div');
                 spinner.className = 'spinner';
-
                 const text = document.createElement('span');
-                text.textContent = 'Connessione...';
-
-                button.appendChild(spinner);
-                button.appendChild(text);
+                text.textContent = 'Connessione a GigiAI...';
+                statusLine.appendChild(spinner);
+                statusLine.appendChild(text);
+                callActions.hidden = true;
             } else if (peerConnection && peerConnection.connectionState === 'connected') {
                 const pulseCircle = document.createElement('div');
                 pulseCircle.className = 'pulse-circle';
-
-                const micIcon = document.createElement('div');
-                micIcon.className = 'mute-toggle';
-                micIcon.innerHTML = isMuted ? micMutedIconSVG : micIconSVG;
-                micIcon.addEventListener('click', toggleMute);
-
                 const text = document.createElement('span');
-                text.textContent = 'Termina conversazione';
+                text.textContent = 'GigiAI ti sta ascoltando';
+                statusLine.appendChild(pulseCircle);
+                statusLine.appendChild(text);
 
-                button.appendChild(pulseCircle);
-                button.appendChild(micIcon);
-                button.appendChild(text);
+                callActions.hidden = false;
+                muteToggle.innerHTML = isMuted ? micMutedIconSVG : micIconSVG;
             } else {
-                const text = document.createElement('span');
-                text.textContent = 'Inizia conversazione';
-                button.appendChild(text);
+                statusLine.textContent = 'Conversazione terminata';
+                callActions.hidden = true;
             }
         }
 
-        function toggleMute(event) {
-            event.stopPropagation();
+        function toggleMute() {
             if (!peerConnection || peerConnection.connectionState !== 'connected') return;
 
             isMuted = !isMuted;
@@ -473,8 +537,11 @@
                 }
             });
 
-            updateButtonState();
+            updateStatusUI();
         }
+
+        document.getElementById('mute-toggle').addEventListener('click', toggleMute);
+        document.getElementById('end-call-btn').addEventListener('click', () => stop());
 
         function setupAudioVisualization(stream) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -547,7 +614,10 @@
                 peerConnection.addEventListener('track', (evt) => {
                     if (audioOutput.srcObject !== evt.streams[0]) {
                         audioOutput.srcObject = evt.streams[0];
-                        audioOutput.play();
+                        audioOutput.play().catch(() => {
+                            const overlay = document.getElementById('audio-unlock-overlay');
+                            overlay.hidden = false;
+                        });
                     }
                 });
 
@@ -584,7 +654,7 @@
                         const toast = document.getElementById('error-toast');
                         toast.style.display = 'none';
                     }
-                    updateButtonState();
+                    updateStatusUI();
                 });
 
                 webrtc_id = Math.random().toString(36).substring(7);
@@ -664,24 +734,20 @@
                 console.log('closing');
                 peerConnection.close();
             }
-            updateButtonState();
+            updateStatusUI();
             audioLevel = 0;
         }
 
-        startButton.addEventListener('click', (event) => {
-            if (event.target.closest('.mute-toggle')) {
-                return;
-            }
-
-            console.log('clicked');
-            console.log(peerConnection, peerConnection?.connectionState);
-            if (!peerConnection || peerConnection.connectionState !== 'connected') {
-                setupWebRTC();
-            } else {
-                console.log('stopping');
-                stop();
-            }
+        document.getElementById('audio-unlock-overlay').addEventListener('click', () => {
+            const overlay = document.getElementById('audio-unlock-overlay');
+            audioOutput.play().finally(() => {
+                overlay.hidden = true;
+            });
         });
+
+        // GigiAI si connette e si presenta da sola, senza bisogno di un pulsante:
+        // basta entrare in questa pagina per parlare con lei.
+        setupWebRTC();
     </script>
 </body>
 

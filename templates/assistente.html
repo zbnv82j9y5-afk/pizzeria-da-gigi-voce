@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+<script>
+/* Ogni nuova apertura dell'app (o del sito in una nuova scheda) parte con il
+   carrello vuoto. Nome, telefono e indirizzo (datiCliente) restano salvati.
+   Non si svuota al ritorno da un pagamento (Stripe aggiunge ?pagamento=...),
+   altrimenti il riepilogo non troverebbe l'ordine appena pagato. */
+(function () { try {
+  if (sessionStorage.getItem('dg_sessione')) return;
+  sessionStorage.setItem('dg_sessione', '1');
+  if (/[?&](pagamento|checkout_id)=/.test(location.search)) return;
+  localStorage.removeItem('carrello');
+  localStorage.removeItem('carrelloAssistente');
+} catch (e) {} })();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assistente - Pizzeria da Gigi</title>
